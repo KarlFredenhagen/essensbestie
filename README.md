@@ -38,6 +38,13 @@ aber nie deinen Schluessel.
 
 - Foto (Kamera oder Galerie) + Notiz, Analyse per Gemini mit strukturierter JSON-Antwort
 - Portionsfaktor (1/2 bis 2x) vor dem Speichern
+- Barcode-Scanner ueber die Kamera (BarcodeDetector des Browsers, keine
+  Bibliothek), Nachschlagen bei Open Food Facts - der gemeinnuetzigen
+  europaeischen Lebensmitteldatenbank, frei und ohne Konto. Menge per Stepper
+  und Schnellwahl (Portion / 100 g / Packung)
+- Kennt Open Food Facts ein Produkt nicht, legt man es selbst an: Naehrwerte
+  pro 100 g eintragen, danach liegt es lokal unter seinem Barcode und ist beim
+  naechsten Scan sofort da, auch offline. Verwaltung unter "Mehr"
 - Vier Sektionen: Fruehstueck, Mittagessen, Abendessen, Snacks
 - Einrichtungs-Assistent: Geschlecht, Alter, Groesse, Gewicht, Aktivitaet, Ziel
   -> Kalorienziel nach Mifflin-St-Jeor, jederzeit ueberschreibbar
