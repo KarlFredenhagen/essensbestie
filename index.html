@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-<meta name="theme-color" content="#0f1115">
+<meta name="theme-color" content="#121010">
 <title>Essensbestie</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -14,19 +14,24 @@
 <meta name="format-detection" content="telephone=no">
 <style>
 :root{
-  --bg:#f6f5f2; --card:#ffffff; --card-2:#f0efec; --text:#16181d; --muted:#6b7280;
-  --line:#e3e1dc; --accent:#e4572e; --accent-soft:#fdece6;
-  --kcal:#e4572e; --prot:#3b82c4; --carb:#d9a441; --fat:#7c6bb0; --water:#3aa6c9;
-  --ok:#3f9d5a; --err:#c9453a;
-  --r:16px; --shadow:0 1px 2px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.05);
+  /* Rot als Hauptfarbe, dazu Teal/Bernstein/Violett als Gegenpole —
+     bewusst weit auseinander im Farbkreis, damit die Balken auf einen Blick
+     unterscheidbar bleiben, auch nebeneinander im Ring. */
+  --bg:#f7f4f3; --card:#ffffff; --card-2:#f1ecea; --text:#191214; --muted:#6e6467;
+  --line:#e7dfdc; --accent:#d92d20; --accent-soft:#fdeceb;
+  --kcal:#d92d20; --prot:#0f7f8c; --carb:#b8801c; --fat:#6a53c9; --water:#0e8fb4;
+  --ok:#0f7a52; --err:#b4231a;
+  --glass-bg:rgba(255,255,255,.60); --glass-brd:rgba(70,30,25,.10); --glass-hi:rgba(255,255,255,.85);
+  --r:16px; --shadow:0 1px 2px rgba(60,20,15,.06), 0 8px 24px rgba(60,20,15,.07);
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --bg:#0f1115; --card:#181b21; --card-2:#20242c; --text:#e9eaec; --muted:#9aa1ad;
-    --line:#2a2f38; --accent:#ff7043; --accent-soft:#2a1b16;
-    --kcal:#ff7043; --prot:#5aa9e6; --carb:#e8bf5c; --fat:#a08fd4; --water:#4cc0e0;
-    --ok:#4fbf72; --err:#e5675c;
-    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    --bg:#121010; --card:#1c1918; --card-2:#272322; --text:#f1ebe9; --muted:#a49b98;
+    --line:#332e2c; --accent:#ff5247; --accent-soft:#361a17;
+    --kcal:#ff5247; --prot:#3cc0cf; --carb:#e5ab43; --fat:#a494f5; --water:#42c4e2;
+    --ok:#43cb8d; --err:#ff6f62;
+    --glass-bg:rgba(40,35,34,.58); --glass-brd:rgba(255,255,255,.12); --glass-hi:rgba(255,255,255,.13);
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 8px 24px rgba(0,0,0,.4);
   }
 }
 *{box-sizing:border-box}
@@ -36,7 +41,7 @@ body{
   background:var(--bg); color:var(--text);
   font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   -webkit-font-smoothing:antialiased;
-  padding-bottom:calc(78px + env(safe-area-inset-bottom));
+  padding-bottom:calc(92px + env(safe-area-inset-bottom));
   /* Wie eine App anfassen: kein Textmarkieren, kein blauer Tap-Blitz,
      kein Gummiband-Scrollen, keine Lupe beim Langdruecken. */
   -webkit-user-select:none; user-select:none;
@@ -50,8 +55,9 @@ input,textarea,.selectable,.selectable *{
 }
 .wrap{max-width:620px;margin:0 auto;padding:0 16px}
 header{
-  position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);
-  backdrop-filter:blur(12px);border-bottom:1px solid var(--line);
+  position:sticky;top:0;z-index:20;background:var(--glass-bg);
+  -webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);
+  border-bottom:1px solid var(--glass-brd);
   padding:calc(11px + env(safe-area-inset-top)) 0 11px;
 }
 header .wrap{display:flex;align-items:center;gap:10px}
@@ -86,6 +92,8 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 0
 .row{display:flex;gap:10px}
 .row>*{flex:1;min-width:0}
 .hint{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+.i{display:inline-block;vertical-align:-.19em;flex:none}
+.ico{display:inline-flex;align-items:center;justify-content:center}
 
 /* Eigenes Dropdown statt des Systempickers */
 .cs{position:relative}
@@ -260,19 +268,38 @@ details[open] summary::before{transform:rotate(90deg)}
 
 /* Nav */
 nav{
-  position:fixed;left:0;right:0;bottom:0;z-index:30;
-  background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(14px);
-  border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)
+  position:fixed;left:0;right:0;bottom:0;z-index:30;pointer-events:none;
+  padding:0 12px calc(11px + env(safe-area-inset-bottom))
 }
-nav .wrap{display:flex}
+nav .wrap{
+  pointer-events:auto;position:relative;display:flex;padding:6px;max-width:520px;
+  border-radius:27px;
+  background:var(--glass-bg);
+  -webkit-backdrop-filter:blur(26px) saturate(190%);
+  backdrop-filter:blur(26px) saturate(190%);
+  border:1px solid var(--glass-brd);
+  box-shadow:0 10px 34px rgba(0,0,0,.2), 0 2px 8px rgba(0,0,0,.08),
+             inset 0 1px 0 var(--glass-hi), inset 0 -1px 0 rgba(0,0,0,.04);
+}
+/* Der Lichtstreifen oben macht aus flachem Blur eine gewoelbte Glaskante. */
+nav .wrap::before{
+  content:'';position:absolute;inset:1px 1px auto;height:48%;border-radius:26px 26px 40% 40%/26px 26px 100% 100%;
+  background:linear-gradient(to bottom,var(--glass-hi),transparent);opacity:.5;pointer-events:none
+}
+nav .pill{
+  position:absolute;top:6px;bottom:6px;left:0;border-radius:21px;background:var(--accent-soft);
+  transition:transform .34s cubic-bezier(.32,1.12,.4,1), width .34s cubic-bezier(.32,1.12,.4,1);
+  z-index:0;pointer-events:none
+}
 nav button{
+  position:relative;z-index:1;
   flex:1;background:none;border:none;color:var(--muted);
-  padding:9px 0 10px;display:flex;flex-direction:column;align-items:center;gap:3px;
-  font-size:10.5px;font-weight:600;border-radius:0
+  padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:10.5px;font-weight:600;border-radius:21px;transition:color .22s
 }
-nav button .ico{font-size:19px;line-height:1;transition:transform .22s cubic-bezier(.3,1.4,.5,1)}
+nav button .ico{line-height:0;transition:transform .28s cubic-bezier(.3,1.4,.5,1)}
 nav button.on{color:var(--accent)}
-nav button.on .ico{transform:scale(1.16) translateY(-1px)}
+nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 
 /* Animationen */
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
@@ -303,6 +330,39 @@ nav button.on .ico{transform:scale(1.16) translateY(-1px)}
 }
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* Barcode-Scanner */
+#scanner{position:fixed;inset:0;z-index:90;background:#000}
+#scanVid{width:100%;height:100%;object-fit:cover}
+.scan-mask{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.scan-window{
+  position:relative;width:min(84vw,340px);height:190px;border-radius:18px;
+  box-shadow:0 0 0 100vmax rgba(0,0,0,.62);
+  border:2px solid rgba(255,255,255,.85);overflow:hidden
+}
+.scan-line{
+  position:absolute;left:8%;right:8%;height:2px;background:var(--accent);
+  box-shadow:0 0 12px var(--accent);animation:scanSweep 2s ease-in-out infinite
+}
+@keyframes scanSweep{0%,100%{top:14%}50%{top:84%}}
+.scan-foot{
+  position:absolute;left:0;right:0;bottom:0;padding:20px 20px calc(26px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;gap:14px;align-items:center
+}
+#scanHint{color:#fff;font-size:14.5px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.7);text-align:center}
+.scan-foot .btn-ghost{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3);min-width:180px;text-align:center}
+
+/* Mengen-Schnellwahl: kompakt bleiben und dem Hauptknopf nicht die Schau stehlen */
+#bcQuick{justify-content:flex-start}
+#bcQuick button{flex:0 1 auto;min-width:92px}
+#bcQuick button.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+
+/* Eigene Produkte */
+.prod{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line);font-size:14px}
+.prod:first-child{border-top:none}
+.prod .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prod .c{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.prod button{background:none;border:none;color:var(--muted);padding:4px}
+
 /* Onboarding */
 #onb{position:fixed;inset:0;z-index:80;background:var(--bg);overflow-y:auto;padding:0 0 40px}
 #onb .inner{max-width:520px;margin:0 auto;padding:calc(34px + env(safe-area-inset-top)) 20px 20px}
@@ -326,7 +386,7 @@ nav button.on .ico{transform:scale(1.16) translateY(-1px)}
 
 <header>
   <div class="wrap">
-    <div class="logo"><span>🍲</span> Essensbestie</div>
+    <div class="logo"><span class="ico" data-ico="bowl" data-ico-size="21"></span> Essensbestie</div>
     <div class="spacer"></div>
     <div class="streak hidden" id="streakBadge"></div>
   </div>
@@ -408,17 +468,100 @@ nav button.on .ico{transform:scale(1.16) translateY(-1px)}
     <h2 style="margin-top:20px">Mahlzeit</h2>
     <div class="seg slots" id="slotPick"></div>
 
+    <h2>Womit</h2>
+    <div class="seg" id="modePick">
+      <button data-m="foto" class="on"><span data-ico="camera" data-ico-size="16"></span> Foto</button>
+      <button data-m="barcode"><span data-ico="barcode" data-ico-size="16"></span> Barcode</button>
+    </div>
+
+    <!-- ---------- Barcode ---------- -->
+    <div id="modeBarcode" class="hidden">
+      <h2>Produkt suchen</h2>
+      <button class="btn" id="scanStart"><span data-ico="scan" data-ico-size="19"></span> Barcode scannen</button>
+      <div class="field" style="margin-top:14px">
+        <label for="bcInput">oder Nummer eintippen</label>
+        <div class="row">
+          <input id="bcInput" inputmode="numeric" placeholder="4000417025005" autocomplete="off" spellcheck="false">
+          <button class="btn-ghost" id="bcLookup" style="flex:0 0 auto;padding:12px 16px"><span data-ico="search" data-ico-size="17"></span></button>
+        </div>
+        <div class="hint">Nährwerte von <b>Open Food Facts</b> — einer gemeinnützigen, in Frankreich betriebenen Lebensmitteldatenbank. Frei nutzbar, kein Konto nötig.</div>
+      </div>
+      <div id="bcStatus"></div>
+
+      <!-- Treffer -->
+      <div id="bcResult" class="hidden">
+        <h2>Gefunden</h2>
+        <div class="card pad">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <div style="flex:1;min-width:0">
+              <div id="bcName" style="font-size:17px;font-weight:700;letter-spacing:-.02em"></div>
+              <div id="bcBrand" class="hint" style="margin-top:2px"></div>
+            </div>
+            <span id="bcSrc" class="tag"></span>
+          </div>
+
+          <label style="margin-top:16px">Wie viel davon?</label>
+          <div class="stepper">
+            <button class="step" id="bcMinus">−</button>
+            <div class="val"><b id="bcAmount">100</b><small>g</small></div>
+            <button class="step" id="bcPlus">+</button>
+          </div>
+          <div class="seg sm" id="bcQuick" style="margin-top:10px"></div>
+
+          <div class="macro-grid" style="margin-top:14px">
+            <div class="macro kc"><div class="v" id="bcKcal">–</div><div class="k">kcal</div></div>
+            <div class="macro p"><div class="v" id="bcProt">–</div><div class="k">Protein</div></div>
+            <div class="macro c"><div class="v" id="bcCarb">–</div><div class="k">Kohlenh.</div></div>
+            <div class="macro f"><div class="v" id="bcFat">–</div><div class="k">Fett</div></div>
+          </div>
+          <div id="bcPer100" class="hint" style="margin-top:10px"></div>
+          <button class="btn" id="bcAdd" style="margin-top:16px">Hinzufügen</button>
+          <button class="btn-ghost" id="bcEdit" style="width:100%;margin-top:10px"><span data-ico="edit" data-ico-size="16"></span> Werte korrigieren</button>
+        </div>
+      </div>
+
+      <!-- Selbst anlegen -->
+      <div id="bcNew" class="hidden">
+        <h2>Selbst anlegen</h2>
+        <div class="card pad">
+          <div class="hint" id="bcNewHint" style="margin:0 0 14px"></div>
+          <div class="field">
+            <label for="npName">Name</label>
+            <input id="npName" placeholder="z.B. Haferflocken kernig" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="npBrand">Marke (optional)</label>
+            <input id="npBrand" placeholder="z.B. Kölln" autocomplete="off">
+          </div>
+          <label style="margin-top:16px">Nährwerte pro 100 g</label>
+          <div class="row">
+            <div><label for="npKcal">kcal</label><input type="number" id="npKcal" inputmode="decimal"></div>
+            <div><label for="npProt">Protein g</label><input type="number" id="npProt" inputmode="decimal"></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div><label for="npCarb">Kohlenh. g</label><input type="number" id="npCarb" inputmode="decimal"></div>
+            <div><label for="npFat">Fett g</label><input type="number" id="npFat" inputmode="decimal"></div>
+          </div>
+          <div class="hint">Steht alles auf der Nährwerttabelle der Packung. Einmal eintragen — beim nächsten Scan ist es sofort da.</div>
+          <button class="btn" id="npSave" style="margin-top:16px">Speichern</button>
+          <button class="btn-ghost" id="npCancel" style="width:100%;margin-top:10px">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- Foto ---------- -->
+    <div id="modeFoto">
     <h2>Foto</h2>
     <button class="shot" id="shot">
-      <span class="ico">📷</span>
+      <span class="ico" data-ico="camera" data-ico-size="34"></span>
       <span class="lbl">Foto aufnehmen oder wählen</span>
     </button>
     <input type="file" accept="image/*" capture="environment" id="fileCam" class="hidden">
     <input type="file" accept="image/*" id="fileLib" class="hidden">
     <div class="row" style="margin-top:10px">
-      <button class="btn-ghost" id="btnCam">📷 Kamera</button>
-      <button class="btn-ghost" id="btnLib">🖼️ Galerie</button>
-      <button class="btn-ghost hidden" id="btnClear">✕</button>
+      <button class="btn-ghost" id="btnCam"><span class="ico" data-ico="camera"></span> Kamera</button>
+      <button class="btn-ghost" id="btnLib"><span class="ico" data-ico="image"></span> Galerie</button>
+      <button class="btn-ghost hidden" id="btnClear"><span class="ico" data-ico="close"></span></button>
     </div>
 
     <div class="field" style="margin-top:16px">
@@ -456,6 +599,7 @@ nav button.on .ico{transform:scale(1.16) translateY(-1px)}
         <button class="btn" id="save" style="margin-top:16px">Hinzufügen</button>
       </div>
     </div>
+    </div><!-- /modeFoto -->
   </section>
 
   <!-- ================= IDEEN ================= -->
@@ -508,7 +652,7 @@ nav button.on .ico{transform:scale(1.16) translateY(-1px)}
           <input type="text" id="key" class="masked" placeholder="AIza…" name="eb-token"
                  autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                  data-lpignore="true" data-1p-ignore="true">
-          <button type="button" class="pw-eye" id="keyEye" title="Anzeigen">👁</button>
+          <button type="button" class="pw-eye" id="keyEye" title="Anzeigen" data-ico="eye"></button>
         </div>
         <div class="hint">Kostenlos auf <b>aistudio.google.com/apikey</b> erstellen — ohne Kreditkarte. Der Key bleibt nur in diesem Browser.</div>
       </div>
@@ -571,6 +715,9 @@ nav button.on .ico{transform:scale(1.16) translateY(-1px)}
       <div class="hint">Schalte ab, was du nicht brauchst — es verschwindet dann aus der Tagesansicht.</div>
     </div>
 
+    <h2>Eigene Produkte <span class="r" id="prodCount"></span></h2>
+    <div class="card pad" id="products"></div>
+
     <h2>Zurücksetzen</h2>
     <div class="card pad">
       <button class="btn-ghost" id="redoOnb" style="width:100%">Einrichtung neu durchlaufen</button>
@@ -585,13 +732,24 @@ nav button.on .ico{transform:scale(1.16) translateY(-1px)}
 
 <nav>
   <div class="wrap">
-    <button data-v="heute" class="on"><span class="ico">◎</span>Heute</button>
-    <button data-v="neu"><span class="ico">＋</span>Neu</button>
-    <button data-v="ideen"><span class="ico">✨</span>Ideen</button>
-    <button data-v="verlauf"><span class="ico">☰</span>Verlauf</button>
-    <button data-v="set"><span class="ico">⚙︎</span>Mehr</button>
+    <div class="pill" id="navPill"></div>
+    <button data-v="heute" class="on"><span class="ico" data-ico="target" data-ico-size="21"></span>Heute</button>
+    <button data-v="neu"><span class="ico" data-ico="plus" data-ico-size="21"></span>Neu</button>
+    <button data-v="ideen"><span class="ico" data-ico="sparkle" data-ico-size="21"></span>Ideen</button>
+    <button data-v="verlauf"><span class="ico" data-ico="list" data-ico-size="21"></span>Verlauf</button>
+    <button data-v="set"><span class="ico" data-ico="gear" data-ico-size="21"></span>Mehr</button>
   </div>
 </nav>
+
+<!-- ================= BARCODE-SCANNER ================= -->
+<div id="scanner" class="hidden">
+  <video id="scanVid" playsinline muted autoplay></video>
+  <div class="scan-mask"><div class="scan-window"><div class="scan-line"></div></div></div>
+  <div class="scan-foot">
+    <div id="scanHint">Barcode ins Fenster halten</div>
+    <button class="btn-ghost" id="scanStop">Abbrechen</button>
+  </div>
+</div>
 
 <div id="toast"></div>
 
@@ -600,10 +758,10 @@ nav button.on .ico{transform:scale(1.16) translateY(-1px)}
 
 /* ============ Konstanten ============ */
 const SLOTS = [
-  {id:'fruehstueck', em:'🌅', name:'Frühstück'},
-  {id:'mittag',      em:'🍽️', name:'Mittagessen'},
-  {id:'abend',       em:'🌙', name:'Abendessen'},
-  {id:'snack',       em:'🍎', name:'Snacks'}
+  {id:'fruehstueck', icon:'sunrise', name:'Frühstück'},
+  {id:'mittag',      icon:'cutlery', name:'Mittagessen'},
+  {id:'abend',       icon:'moon',    name:'Abendessen'},
+  {id:'snack',       icon:'apple',   name:'Snacks'}
 ];
 const DEF_SPLIT = {carb:50, prot:30, fat:20};
 const SPLIT_PRESETS = [
@@ -625,7 +783,7 @@ const FACTORS = [[0.5,'½'],[0.75,'¾'],[1,'1×'],[1.5,'1½'],[2,'2×']];
 /* ============ Speicher ============ */
 const K = {key:'eb_key', model:'eb_model', goals:'eb_goals', entries:'eb_entries',
            days:'eb_days', profile:'eb_profile', mods:'eb_mods', prefs:'eb_prefs',
-           onb:'eb_onb', models:'eb_models', pinned:'eb_pinned'};
+           onb:'eb_onb', models:'eb_models', pinned:'eb_pinned', products:'eb_products'};
 
 function jget(k, def){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?def:v; }catch{ return def; } }
 function jset(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ toast('Speicher voll — alte Fotos werden knapp'); } }
@@ -641,6 +799,7 @@ const store = {
   get mods(){ return {...DEF_MODS, ...jget(K.mods,{})}; }, set mods(v){ jset(K.mods,v); },
   get entries(){ return jget(K.entries,[]); }, set entries(v){ jset(K.entries,v); },
   get days(){ return jget(K.days,{}); }, set days(v){ jset(K.days,v); },
+  get products(){ return jget(K.products,{}); }, set products(v){ jset(K.products,v); },
   get onbDone(){ return localStorage.getItem(K.onb)==='1'; }, set onbDone(v){ localStorage.setItem(K.onb, v?'1':'0'); }
 };
 
@@ -659,6 +818,54 @@ let toastT;
 function toast(msg){
   const t=$('#toast'); t.textContent=msg; t.classList.add('on');
   clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2300);
+}
+
+/* ============ Icons ============
+   Einfarbige Strich-Icons statt Emojis: sie nehmen die Textfarbe an,
+   sehen auf jedem Geraet gleich aus und passen zur roten Palette. */
+const ICONS = {
+  bowl:    '<path d="M3 11h18a9 9 0 0 1-9 9 9 9 0 0 1-9-9Z"/><path d="M8.5 7.5c0-1.2 1-1.6 1-2.7 0-.7-.5-1.3-.9-1.6M12 7.2c0-1.4 1.1-1.8 1.1-3 0-.8-.5-1.4-1-1.7M15.5 7.5c0-1.2 1-1.6 1-2.7"/>',
+  sunrise: '<path d="M12 2.6v3M4.7 6.1l1.8 1.8M2.4 14h2.6M19 14h2.6M17.5 7.9l1.8-1.8"/><path d="M7.6 14a4.4 4.4 0 0 1 8.8 0"/><path d="M2.4 18.5h19.2"/>',
+  cutlery: '<path d="M4.6 2.8v6.4a2.2 2.2 0 0 0 4.4 0V2.8M6.8 11.4V21.2"/><path d="M17.6 2.8c-1.6 1.1-2.6 3.2-2.6 5.9s1 3.9 2.6 3.9v8.6"/>',
+  moon:    '<path d="M20.4 14.6A8.6 8.6 0 0 1 9.4 3.6a8.6 8.6 0 1 0 11 11Z"/>',
+  apple:   '<path d="M12 8.2C10.8 6.4 8.8 5.6 7 6.4c-2 .8-2.8 3.3-2.2 6.2C5.4 15.8 7.3 20.2 9.6 20.2c1 0 1.4-.5 2.4-.5s1.4.5 2.4.5c2.3 0 4.2-4.4 4.8-7.6.6-2.9-.2-5.4-2.2-6.2-1.8-.8-3.8 0-5 1.8Z"/><path d="M12 8.2V5.4c0-1.1.9-2 2-2"/>',
+  flame:   '<path d="M12 21.4c3.7 0 6.2-2.4 6.2-5.8 0-3.9-3.4-5.9-4.4-9.3-1.9 1.5-2.4 3.4-2.4 4.9 0-1-.9-2.5-1.9-3.5-1.5 2-3.7 4.4-3.7 7.9 0 3.4 2.5 5.8 6.2 5.8Z"/>',
+  camera:  '<path d="M3 8.9A2.6 2.6 0 0 1 5.6 6.3h1.6a1 1 0 0 0 .8-.4l1-1.4a1 1 0 0 1 .8-.4h4.4a1 1 0 0 1 .8.4l1 1.4a1 1 0 0 0 .8.4h1.6A2.6 2.6 0 0 1 21 8.9v8.5a2.6 2.6 0 0 1-2.6 2.6H5.6A2.6 2.6 0 0 1 3 17.4Z"/><circle cx="12" cy="13" r="3.5"/>',
+  image:   '<rect x="3" y="4.6" width="18" height="14.8" rx="2.6"/><circle cx="8.4" cy="9.6" r="1.5"/><path d="m3.6 17.6 4.3-4.3a1.9 1.9 0 0 1 2.7 0l3.6 3.6"/><path d="m13.4 14.4 1.6-1.6a1.9 1.9 0 0 1 2.7 0l2.7 2.7"/>',
+  barcode: '<path d="M3 5.5v13M6.4 5.5v13M9.8 5.5v9M13.2 5.5v13M16.6 5.5v9M20 5.5v13"/>',
+  scan:    '<path d="M3 8.4V5.9A2.9 2.9 0 0 1 5.9 3h2.5M15.6 3h2.5A2.9 2.9 0 0 1 21 5.9v2.5M21 15.6v2.5a2.9 2.9 0 0 1-2.9 2.9h-2.5M8.4 21H5.9A2.9 2.9 0 0 1 3 18.1v-2.5"/><path d="M7.4 9v6M10.5 9v6M13.5 9v6M16.6 9v6"/>',
+  plus:    '<path d="M12 5.2v13.6M5.2 12h13.6"/>',
+  target:  '<circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="3.4"/>',
+  sparkle: '<path d="M11 3.4 12.7 8 17.3 9.7 12.7 11.4 11 16 9.3 11.4 4.7 9.7 9.3 8Z"/><path d="M18.2 14.6l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8Z"/>',
+  list:    '<path d="M8.4 6h12.2M8.4 12h12.2M8.4 18h12.2"/><path d="M3.6 6h.02M3.6 12h.02M3.6 18h.02"/>',
+  gear:    '<path d="M3.4 6.6h8.2M17.4 6.6h3.2M3.4 12h2.2M11.6 12h9M3.4 17.4h8.2M17.4 17.4h3.2"/><circle cx="14.5" cy="6.6" r="2.4"/><circle cx="8.6" cy="12" r="2.4"/><circle cx="14.5" cy="17.4" r="2.4"/>',
+  droplet: '<path d="M12 3.1s6.1 6.3 6.1 10.2a6.1 6.1 0 1 1-12.2 0C5.9 9.4 12 3.1 12 3.1Z"/>',
+  scale:   '<rect x="3.4" y="4.4" width="17.2" height="15.2" rx="3.2"/><path d="M8.2 10.4a5 5 0 0 1 7.6 0"/><path d="m12 13.4 2.1-2.9"/>',
+  chart:   '<path d="M3 20.4h18"/><path d="M6.4 20.4v-5.8M12 20.4V6.2M17.6 20.4v-8.6"/>',
+  close:   '<path d="m6.4 6.4 11.2 11.2M17.6 6.4 6.4 17.6"/>',
+  check:   '<path d="m5.2 12.6 4.6 4.6L18.8 7.4"/>',
+  refresh: '<path d="M20.2 11.4A8.2 8.2 0 0 0 6.3 6.3L3.4 9"/><path d="M3.4 4.4V9h4.6"/><path d="M3.8 12.6a8.2 8.2 0 0 0 13.9 5.1l2.9-2.7"/><path d="M20.6 19.6V15H16"/>',
+  eye:     '<path d="M2.2 12S5.8 5.4 12 5.4 21.8 12 21.8 12 18.2 18.6 12 18.6 2.2 12 2.2 12Z"/><circle cx="12" cy="12" r="3.2"/>',
+  eyeOff:  '<path d="M9.6 5.7A9.6 9.6 0 0 1 12 5.4c6.2 0 9.8 6.6 9.8 6.6a17 17 0 0 1-3 3.9M6.2 7.4A17.4 17.4 0 0 0 2.2 12S5.8 18.6 12 18.6c1.5 0 2.8-.4 4-.9"/><path d="m3 3 18 18"/><path d="M10 10a3.2 3.2 0 0 0 4.2 4.2"/>',
+  hand:    '<path d="M11 20.4c-3 0-5-2-5-5v-4.6a1.3 1.3 0 0 1 2.6 0V13"/><path d="M8.6 12V5.2a1.3 1.3 0 0 1 2.6 0V11M11.2 11V4.4a1.3 1.3 0 0 1 2.6 0V11M13.8 11.4V6.4a1.3 1.3 0 0 1 2.6 0v8c0 3.4-1.8 6-5.4 6"/>',
+  edit:    '<path d="M12.6 4.6H5.4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.2"/><path d="M18 3.2a1.9 1.9 0 0 1 2.8 2.8L12.4 14.4l-3.6.8.8-3.6Z"/>',
+  search:  '<circle cx="10.8" cy="10.8" r="7"/><path d="m20.4 20.4-4.6-4.6"/>',
+  warn:    '<path d="M12 3.6 21.4 20H2.6Z"/><path d="M12 9.6v4.6M12 17.4h.02"/>'
+};
+function ico(name, size){
+  const p = ICONS[name];
+  if(!p) return '';
+  return `<svg class="i" viewBox="0 0 24 24" width="${size||18}" height="${size||18}" fill="none"
+    stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true">${p}</svg>`;
+}
+// Fuellt alle [data-ico]-Platzhalter im statischen HTML.
+function paintIcons(root){
+  (root||document).querySelectorAll('[data-ico]').forEach(el => {
+    if(el.dataset.icoDone) return;
+    el.innerHTML = ico(el.dataset.ico, el.dataset.icoSize);
+    el.dataset.icoDone = '1';
+  });
 }
 
 /* ---- App-Gefuehl: kurzer Impuls beim Antippen ---- */
@@ -1032,6 +1239,7 @@ const REC_SCHEMA = {
 /* ============ Views ============ */
 const VIEWS = ['heute','neu','ideen','verlauf','set'];
 function show(v){
+  if(scanStream) stopScan();
   VIEWS.forEach(x => $('#v-'+x).classList.toggle('hidden', x!==v));
   $$('nav button').forEach(b => b.classList.toggle('on', b.dataset.v===v));
   window.scrollTo({top:0});
@@ -1040,7 +1248,17 @@ function show(v){
   if(v==='verlauf') renderHistory();
   if(v==='set')     loadSettings();
   animIn($('#v-'+v));
+  moveNavPill();
 }
+
+// Die Glaskapsel wandert unter das aktive Symbol.
+function moveNavPill(){
+  const btn = $('nav button.on'), pill = $('#navPill');
+  if(!btn || !pill) return;
+  pill.style.width = btn.offsetWidth + 'px';
+  pill.style.transform = `translateX(${btn.offsetLeft}px)`;
+}
+addEventListener('resize', moveNavPill);
 $$('nav button').forEach(b => b.onclick = ()=>{ tap(); show(b.dataset.v); });
 
 /* ============ Neu: Slot + Foto ============ */
@@ -1049,7 +1267,7 @@ let photoFull=null, photoThumb=null;
 
 function renderSlotPick(){
   $('#slotPick').innerHTML = SLOTS.map(s =>
-    `<button data-s="${s.id}" class="${s.id===pickedSlot?'on':''}"><span class="em">${s.em}</span>${s.name}</button>`).join('');
+    `<button data-s="${s.id}" class="${s.id===pickedSlot?'on':''}"><span class="em">${ico(s.icon, 17)}</span>${s.name}</button>`).join('');
   $$('#slotPick button').forEach(b => b.onclick = ()=>{ pickedSlot=b.dataset.s; tap(); renderSlotPick(); });
 }
 
@@ -1067,7 +1285,7 @@ async function pickFile(file){
 function clearPhoto(){
   photoFull=photoThumb=null;
   const s=$('#shot'); s.classList.remove('filled');
-  s.innerHTML='<span class="ico">📷</span><span class="lbl">Foto aufnehmen oder wählen</span>';
+  s.innerHTML='<span class="ico">'+ico('camera',34)+'</span><span class="lbl">Foto aufnehmen oder wählen</span>';
   $('#btnClear').classList.add('hidden');
   $('#fileCam').value=''; $('#fileLib').value='';
 }
@@ -1086,7 +1304,7 @@ function setStatus(el, kind, msg){
   if(!kind){ box.innerHTML=''; return; }
   box.innerHTML = kind==='load'
     ? `<div class="status load"><div class="spin"></div><div>${esc(msg)}</div></div>`
-    : `<div class="status err"><div>⚠︎</div><div>${esc(msg)}</div></div>`;
+    : `<div class="status err">${ico('warn')}<div>${esc(msg)}</div></div>`;
   if(kind==='err') shake(box.firstElementChild);
 }
 
@@ -1186,9 +1404,276 @@ $('#save').onclick = ()=>{
   $('#note').value='';
   $('#result').classList.add('hidden');
   viewDate = todayIso();
-  toast('Gespeichert 🎉');
+  toast('Gespeichert');
   show('heute');
 };
+
+/* ============ Barcode + Open Food Facts ============ */
+const OFF = 'https://world.openfoodfacts.org/api/v2/product/';
+
+let bcProduct = null;    // {code, name, brand, per100, serving, paket, source}
+let bcGrams = 100;
+
+$$('#modePick button').forEach(b => b.onclick = ()=>{
+  const m = b.dataset.m;
+  $$('#modePick button').forEach(x => x.classList.toggle('on', x===b));
+  $('#modeFoto').classList.toggle('hidden', m!=='foto');
+  $('#modeBarcode').classList.toggle('hidden', m!=='barcode');
+  tap();
+});
+
+/* ---- Kamera-Scan ---- */
+let scanStream = null, scanTimer = null, detector = null;
+
+async function startScan(){
+  if(!('BarcodeDetector' in window)){
+    toast('Dieses Gerät kann nicht scannen — Nummer eintippen');
+    $('#bcInput').focus();
+    return;
+  }
+  try{
+    const formats = await window.BarcodeDetector.getSupportedFormats();
+    const want = formats.filter(f => /ean|upc|code_128|code_39|itf/.test(f));
+    detector = new window.BarcodeDetector({formats: want.length ? want : formats});
+    scanStream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'}, width:{ideal:1280}}
+    });
+    const v = $('#scanVid');
+    v.srcObject = scanStream;
+    await v.play();
+    $('#scanner').classList.remove('hidden');
+    $('#scanHint').textContent = 'Barcode ins Fenster halten';
+    scanTick();
+  }catch(e){
+    stopScan();
+    toast(e && e.name==='NotAllowedError' ? 'Kamerazugriff abgelehnt' : 'Kamera nicht verfügbar');
+  }
+}
+
+function scanTick(){
+  scanTimer = setTimeout(async ()=>{
+    if(!detector || !scanStream) return;
+    try{
+      const hits = await detector.detect($('#scanVid'));
+      const code = hits && hits[0] && hits[0].rawValue;
+      if(code){
+        tap();
+        stopScan();
+        $('#bcInput').value = code;
+        lookupBarcode(code);
+        return;
+      }
+    }catch{}
+    scanTick();
+  }, 160);
+}
+
+function stopScan(){
+  clearTimeout(scanTimer); scanTimer = null;
+  if(scanStream){ scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+  const v = $('#scanVid'); if(v) v.srcObject = null;
+  $('#scanner').classList.add('hidden');
+}
+$('#scanStart').onclick = startScan;
+$('#scanStop').onclick = stopScan;
+addEventListener('keydown', e => { if(e.key==='Escape' && scanStream) stopScan(); });
+
+/* ---- Nachschlagen ---- */
+$('#bcLookup').onclick = ()=> lookupBarcode($('#bcInput').value);
+$('#bcInput').onkeydown = e => { if(e.key==='Enter') lookupBarcode($('#bcInput').value); };
+
+// Packungsangaben wie "500 g" oder "1,5 l" in Gramm umrechnen.
+function parseQuantity(q){
+  if(!q) return null;
+  const m = String(q).toLowerCase().replace(',', '.').match(/([\d.]+)\s*(kg|g|l|ml|cl)/);
+  if(!m) return null;
+  const v = parseFloat(m[1]);
+  if(!isFinite(v)) return null;
+  const f = {kg:1000, g:1, l:1000, ml:1, cl:10}[m[2]];
+  const g = Math.round(v*f);
+  return (g>0 && g<=5000) ? g : null;
+}
+
+async function lookupBarcode(raw){
+  const code = String(raw||'').replace(/\D/g,'');
+  if(code.length < 6){ toast('Bitte einen vollständigen Barcode eingeben'); return; }
+
+  $('#bcResult').classList.add('hidden');
+  $('#bcNew').classList.add('hidden');
+
+  const own = store.products[code];
+  if(own){ setStatus('#bcStatus', null); showProduct({...own, code, source:'eigen'}); return; }
+
+  setStatus('#bcStatus','load','Suche in Open Food Facts…');
+  try{
+    const fields = 'product_name,product_name_de,brands,quantity,serving_quantity,serving_size,nutriments';
+    const r = await fetch(`${OFF}${encodeURIComponent(code)}.json?fields=${fields}`);
+    if(r.status === 404) return notFound(code, 'Dieses Produkt kennt Open Food Facts noch nicht.');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    if(!d || d.status === 0 || !d.product)
+      return notFound(code, 'Dieses Produkt kennt Open Food Facts noch nicht.');
+
+    const p = d.product, n = p.nutriments || {};
+    let kcal = n['energy-kcal_100g'];
+    if(kcal == null && n['energy_100g'] != null) kcal = n['energy_100g'] / 4.184;   // kJ -> kcal
+    if(kcal == null)
+      return notFound(code, 'Das Produkt steht drin, aber ohne Nährwerte.', p.product_name_de || p.product_name, p.brands);
+
+    setStatus('#bcStatus', null);
+    showProduct({
+      code,
+      name: p.product_name_de || p.product_name || 'Unbenanntes Produkt',
+      brand: p.brands || '',
+      per100: {kcal:r1(kcal), prot:r1(n.proteins_100g||0), carb:r1(n.carbohydrates_100g||0), fat:r1(n.fat_100g||0)},
+      serving: Number(p.serving_quantity) || parseQuantity(p.serving_size),
+      paket: parseQuantity(p.quantity),
+      source: 'off'
+    });
+  }catch{
+    setStatus('#bcStatus','err','Open Food Facts ist gerade nicht erreichbar. Du kannst das Produkt auch selbst anlegen.');
+    openNewProduct(code, '');
+  }
+}
+
+function notFound(code, why, name, brand){
+  setStatus('#bcStatus', null);
+  openNewProduct(code, why, name, brand);
+}
+
+/* ---- Treffer anzeigen ---- */
+function showProduct(prod){
+  bcProduct = prod;
+  bcGrams = prod.serving || 100;
+  $('#bcResult').classList.remove('hidden');
+  $('#bcNew').classList.add('hidden');
+  $('#bcName').textContent = prod.name;
+  // Open Food Facts listet oft eine ganze Markenkette — die ersten zwei reichen.
+  const brand = String(prod.brand||'').split(',').slice(0,2).map(x=>x.trim()).filter(Boolean).join(', ');
+  $('#bcBrand').textContent = [brand, prod.code].filter(Boolean).join(' · ');
+  const src = $('#bcSrc');
+  src.className = 'tag ' + (prod.source==='eigen' ? 'mittel' : 'hoch');
+  src.textContent = prod.source==='eigen' ? 'selbst angelegt' : 'Open Food Facts';
+
+  const quick = [];
+  if(prod.serving) quick.push([prod.serving, 'Portion', true]);
+  quick.push([100, '100 g', false]);
+  if(prod.paket && prod.paket !== prod.serving) quick.push([prod.paket, 'Packung', true]);
+  $('#bcQuick').innerHTML = quick.map(([g,l,sub]) =>
+    `<button type="button" data-g="${g}">${l}${sub?`<small>${g} g</small>`:''}</button>`).join('');
+  $$('#bcQuick button').forEach(b => b.onclick = ()=>{ bcGrams = Number(b.dataset.g); tap(); renderProduct(); });
+
+  renderProduct();
+  animIn($('#bcResult'));
+  $('#bcResult').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function productMacros(){
+  const f = bcGrams / 100, p = bcProduct.per100;
+  return {kcal:r0(p.kcal*f), prot:r1(p.prot*f), carb:r1(p.carb*f), fat:r1(p.fat*f)};
+}
+
+function renderProduct(){
+  if(!bcProduct) return;
+  const m = productMacros();
+  $('#bcAmount').textContent = r0(bcGrams);
+  $('#bcKcal').textContent = m.kcal;
+  $('#bcProt').textContent = m.prot + ' g';
+  $('#bcCarb').textContent = m.carb + ' g';
+  $('#bcFat').textContent  = m.fat + ' g';
+  const p = bcProduct.per100;
+  $('#bcPer100').textContent =
+    `Pro 100 g: ${r0(p.kcal)} kcal · ${r1(p.prot)} g Protein · ${r1(p.carb)} g Kohlenh. · ${r1(p.fat)} g Fett`;
+  $$('#bcQuick button').forEach(b => b.classList.toggle('on', Number(b.dataset.g)===bcGrams));
+}
+
+function stepGrams(d){
+  bcGrams = Math.min(3000, Math.max(1, r0(bcGrams + d)));
+  renderProduct();
+}
+holdRepeat($('#bcMinus'), ()=>stepGrams(-10));
+holdRepeat($('#bcPlus'),  ()=>stepGrams( 10));
+
+$('#bcAdd').onclick = ()=>{
+  if(!bcProduct) return;
+  const m = productMacros();
+  addEntry({
+    date:todayIso(), time:new Date().toISOString(), slot:pickedSlot,
+    name: (()=>{
+      const b = String(bcProduct.brand||'').split(',')[0].trim();
+      // "Nutella (Nutella)" spart man sich.
+      return b && !bcProduct.name.toLowerCase().includes(b.toLowerCase())
+        ? `${bcProduct.name} (${b})` : bcProduct.name;
+    })(),
+    kcal:m.kcal, prot:m.prot, carb:m.carb, fat:m.fat,
+    gewicht:r0(bcGrams), konfidenz:'hoch',
+    note:'Barcode '+bcProduct.code, barcode:bcProduct.code, thumb:null
+  });
+  bcProduct = null;
+  $('#bcResult').classList.add('hidden');
+  $('#bcInput').value = '';
+  viewDate = todayIso();
+  tap(); toast('Eingetragen');
+  show('heute');
+};
+
+$('#bcEdit').onclick = ()=>{
+  if(!bcProduct) return;
+  openNewProduct(bcProduct.code, 'Korrigierte Werte gelten ab jetzt für diesen Barcode.',
+                 bcProduct.name, bcProduct.brand, bcProduct.per100);
+};
+
+/* ---- Eigenes Produkt anlegen ---- */
+function openNewProduct(code, why, name, brand, per100){
+  $('#bcResult').classList.add('hidden');
+  $('#bcNew').classList.remove('hidden');
+  $('#bcNewHint').textContent = (why ? why+' ' : '') + `Trag die Werte von der Packung ein — Barcode ${code}.`;
+  $('#bcNew').dataset.code = code;
+  $('#npName').value  = name || '';
+  $('#npBrand').value = brand || '';
+  $('#npKcal').value = per100 ? per100.kcal : '';
+  $('#npProt').value = per100 ? per100.prot : '';
+  $('#npCarb').value = per100 ? per100.carb : '';
+  $('#npFat').value  = per100 ? per100.fat  : '';
+  animIn($('#bcNew'));
+  $('#bcNew').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+$('#npCancel').onclick = ()=>{ $('#bcNew').classList.add('hidden'); };
+$('#npSave').onclick = ()=>{
+  const code = $('#bcNew').dataset.code;
+  const name = $('#npName').value.trim();
+  if(!name){ toast('Bitte einen Namen eingeben'); shake($('#npName')); return; }
+  const kcal = num($('#npKcal').value);
+  if(kcal <= 0 || kcal > 900){ toast('kcal pro 100 g prüfen'); shake($('#npKcal')); return; }
+  const prod = {
+    name, brand: $('#npBrand').value.trim(),
+    per100: {kcal:r1(kcal), prot:r1(num($('#npProt').value)),
+             carb:r1(num($('#npCarb').value)), fat:r1(num($('#npFat').value))},
+    serving: null, paket: null, ts: Date.now()
+  };
+  const all = store.products; all[code] = prod; store.products = all;
+  $('#bcNew').classList.add('hidden');
+  toast('Produkt gespeichert');
+  showProduct({...prod, code, source:'eigen'});
+};
+
+/* ---- Verwaltung in den Einstellungen ---- */
+function renderProducts(){
+  const all = store.products;
+  const codes = Object.keys(all).sort((a,b) => (all[b].ts||0)-(all[a].ts||0));
+  $('#prodCount').textContent = codes.length ? `${codes.length} gespeichert` : '';
+  $('#products').innerHTML = codes.length
+    ? codes.map(c => `<div class="prod">
+        <div class="n">${esc(all[c].name)}${all[c].brand?` <span style="color:var(--muted)">· ${esc(all[c].brand)}</span>`:''}</div>
+        <div class="c">${r0(all[c].per100.kcal)} kcal</div>
+        <button data-code="${c}" title="Löschen">${ico('close',16)}</button>
+      </div>`).join('')
+    : `<div class="hint" style="margin:0">Noch keine eigenen Produkte. Scanne einen Barcode, den Open Food Facts nicht kennt, und leg ihn selbst an.</div>`;
+  $$('#products button').forEach(b => b.onclick = ()=>{
+    const all2 = store.products; delete all2[b.dataset.code]; store.products = all2;
+    renderProducts(); toast('Gelöscht');
+  });
+}
 
 /* ============ Streak ============ */
 function streak(){
@@ -1208,7 +1693,7 @@ function renderStreak(){
   el.title = n===0
     ? 'Trag heute etwas ein, dann startet deine Serie.'
     : `${n} Tage in Folge etwas eingetragen`;
-  el.textContent = n===0 ? '🔥 Serie starten' : `🔥 ${n} ${n===1?'Tag':'Tage'}`;
+  el.innerHTML = ico('flame', 15) + (n===0 ? ' Serie starten' : ` ${n} ${n===1?'Tag':'Tage'}`);
   if(lastStreak!=null && n>lastStreak) bump(el);
   lastStreak = n;
 }
@@ -1298,19 +1783,19 @@ function renderDay(){
     const kc = items.reduce((a,e)=>a+(e.kcal||0),0);
     const body = items.length ? items.map(e=>{
       const time = new Date(e.time).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-      const img = e.thumb ? `<img src="${e.thumb}" alt="">` : `<div class="noimg">${s.em}</div>`;
+      const img = e.thumb ? `<img src="${e.thumb}" alt="">` : `<div class="noimg">${ico(s.icon, 21)}</div>`;
       return `<div class="entry">${img}
         <div class="txt"><b>${esc(e.name)}</b>
         <small>${time} · ${r0(e.prot)} P · ${r0(e.carb)} K · ${r0(e.fat)} F</small></div>
         <div class="kc">${r0(e.kcal)}</div>
-        <button class="del" data-id="${e.id}" title="Löschen">✕</button></div>`;
+        <button class="del" data-id="${e.id}" title="Löschen">${ico('close',16)}</button></div>`;
     }).join('') : `<div class="slot-empty">Noch nichts eingetragen.</div>`;
 
     return `<div class="slot">
       <div class="slot-head">
-        <span class="em">${s.em}</span><b>${s.name}</b>
+        <span class="em">${ico(s.icon, 17)}</span><b>${s.name}</b>
         <span class="kc">${kc ? r0(kc)+' kcal' : ''}</span>
-        <button class="add" data-slot="${s.id}" title="Hinzufügen">＋</button>
+        <button class="add" data-slot="${s.id}" title="Hinzufügen">${ico('plus',17)}</button>
       </div>
       <div class="card">${body}</div>
     </div>`;
@@ -1361,7 +1846,7 @@ function renderIdeas(){
   $('#restFat').textContent  = r0(Math.max(0, g.fat -t.fat ))+' g';
   $('#prefs').value = store.prefs;
   $('#recSlot').innerHTML = SLOTS.map(s =>
-    `<button data-s="${s.id}" class="${s.id===recSlot?'on':''}"><span class="em">${s.em}</span>${s.name}</button>`).join('');
+    `<button data-s="${s.id}" class="${s.id===recSlot?'on':''}"><span class="em">${ico(s.icon, 17)}</span>${s.name}</button>`).join('');
   $$('#recSlot button').forEach(b => b.onclick = ()=>{ recSlot=b.dataset.s; tap(); renderIdeas(); });
 }
 
@@ -1437,7 +1922,7 @@ function renderRecipes(){
       gewicht:null, konfidenz:'mittel', note:'Rezeptvorschlag', thumb:null
     });
     viewDate = todayIso();
-    toast('Eingetragen 🎉');
+    toast('Eingetragen');
     show('heute');
   });
 }
@@ -1450,7 +1935,7 @@ function renderHistory(){
 
   const box = $('#history');
   if(!rows.length){
-    box.innerHTML = `<div class="empty"><span class="ico">📊</span>Noch keine Daten.</div>`;
+    box.innerHTML = `<div class="empty"><span class="ico">${ico('chart',30)}</span>Noch keine Daten.</div>`;
     $('#stats').innerHTML = `<div class="hint" style="margin:0">Trag ein paar Mahlzeiten ein, dann erscheint hier deine Statistik.</div>`;
     return;
   }
@@ -1487,6 +1972,7 @@ $('#expJson').onclick = ()=>{
   download(`essensbestie-${todayIso()}.json`, JSON.stringify({
     profil: store.profile, ziele: store.goals,
     tage: store.days,
+    eigene_produkte: store.products,
     eintraege: store.entries.map(({thumb,...r})=>r)
   }, null, 2), 'application/json');
 };
@@ -1503,10 +1989,10 @@ $('#expCsv').onclick = ()=>{
 
 /* ============ Einstellungen ============ */
 const MOD_INFO = {
-  water:   ['💧 Wasser', 'Trinkmenge pro Tag mitzählen'],
-  weight:  ['⚖️ Gewicht', 'Tägliches Gewicht und Trend'],
-  streak:  ['🔥 Streak', 'Serie an Tagen mit Einträgen'],
-  recipes: ['✨ Rezeptideen', 'Vorschläge im Restbudget']
+  water:   ['droplet', 'Wasser',      'Trinkmenge pro Tag mitzählen'],
+  weight:  ['scale',   'Gewicht',     'Tägliches Gewicht und Trend'],
+  streak:  ['flame',   'Streak',      'Serie an Tagen mit Einträgen'],
+  recipes: ['sparkle', 'Rezeptideen', 'Vorschläge im Restbudget']
 };
 
 /* ---- Kalorien- und Makro-Editor, geteilt von Onboarding und Einstellungen ---- */
@@ -1549,7 +2035,7 @@ function wireSplitEditor(pre){
       if(el.textContent !== `(${g[m.k]} g)`){ el.textContent = `(${g[m.k]} g)`; bump(el); }
     });
     const s = $('#'+pre+'Sum');
-    s.textContent = sum===100 ? 'Summe 100 % ✓' : `Summe ${sum} % — muss 100 ergeben`;
+    s.innerHTML = sum===100 ? 'Summe 100 % '+ico('check',14) : `Summe ${sum} % — muss 100 ergeben`;
     s.className = 'sumline ' + (sum===100 ? 'good' : 'bad');
     $$('#'+pre+'Presets button').forEach(b => b.classList.toggle('on',
       MACROS.every(m => Number(b.dataset[m.k]) === split[m.k])));
@@ -1597,13 +2083,15 @@ function loadSettings(){
   $('#bmrLine').textContent = `Grundumsatz ca. ${c.bmr} kcal · Gesamtumsatz ca. ${c.tdee} kcal`;
 
   const m = store.mods;
-  $('#mods').innerHTML = Object.entries(MOD_INFO).map(([k,[t,d]])=>
-    `<button data-m="${k}" class="${m[k]?'on':''}">${t} ${m[k]?'✓':''}<small>${d}</small></button>`).join('');
+  $('#mods').innerHTML = Object.entries(MOD_INFO).map(([k,[i,t,d]])=>
+    `<button data-m="${k}" class="${m[k]?'on':''}">${ico(i,16)} ${t} ${m[k]?ico('check',15):''}<small>${d}</small></button>`).join('');
   $$('#mods button').forEach(b => b.onclick = ()=>{
     const mm = store.mods; mm[b.dataset.m] = !mm[b.dataset.m]; store.mods = mm;
     tap(); loadSettings(); renderStreak();
   });
 
+  renderProducts();
+  paintIcons();
   syncAllSelects();
 }
 
@@ -1638,7 +2126,7 @@ $('#saveGoals').onclick = ()=>{
 $('#key').onchange = ()=>{ store.key = $('#key').value.trim(); localStorage.removeItem(K.models); };
 $('#keyEye').onclick = ()=>{
   const masked = $('#key').classList.toggle('masked');
-  $('#keyEye').textContent = masked ? '👁' : '🙈';
+  $('#keyEye').innerHTML = ico(masked ? 'eye' : 'eyeOff');
   $('#keyEye').title = masked ? 'Anzeigen' : 'Verbergen';
 };
 $('#model').onchange = ()=>{
@@ -1665,7 +2153,7 @@ $('#loadModels').onclick = async ()=>{
 };
 $('#redoOnb').onclick = ()=>startOnb(0);
 $('#wipe').onclick = ()=>{
-  if(confirm('Wirklich alle Mahlzeiten, Wasser- und Gewichtsdaten löschen? Das lässt sich nicht rückgängig machen.')){
+  if(confirm('Wirklich alle Mahlzeiten, Wasser- und Gewichtsdaten löschen? Eigene Produkte bleiben erhalten. Das lässt sich nicht rückgängig machen.')){
     store.entries=[]; store.days={};
     renderDay(); renderStreak(); toast('Alles gelöscht');
   }
@@ -1694,7 +2182,7 @@ function renderOnb(){
 
   if(onbStep===0){
     b.innerHTML = `
-      <h1>Hi 👋</h1>
+      <h1>Hi ${ico('hand', 26)}</h1>
       <p class="lead">Essensbestie schätzt die Nährwerte deines Essens aus einem Foto. Dafür brauchst du einen kostenlosen Google-API-Key — ohne Kreditkarte, ohne Abo.</p>
       <div class="card pad">
         <div class="field">
@@ -1790,7 +2278,7 @@ function renderOnb(){
         </div>
       </div>
       <div class="hint" style="margin-top:14px">Bei Erkrankungen, Schwangerschaft oder Essstörungen besprich Kalorienziele bitte mit einer Ärztin oder einem Arzt statt mit einer App.</div>
-      <button class="btn" id="onbDone" style="margin-top:18px">Los geht's 🍲</button>
+      <button class="btn" id="onbDone" style="margin-top:18px">Los geht's</button>
       <button class="btn-ghost" id="onbBack" style="width:100%;margin-top:10px">Zurück</button>`;
     wireSplitEditor('onb');
     const keep = ()=>{ onbData.split = splitEditorValues('onb').split; };
@@ -1811,6 +2299,7 @@ function renderOnb(){
 }
 
 /* ============ Start ============ */
+paintIcons();
 renderSlotPick();
 loadSettings();
 syncAllSelects();

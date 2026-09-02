@@ -61,6 +61,10 @@ deutlich. Wenn es doch mal klemmt: unter "Mehr" auf Flash Lite umstellen.
 
 ## Daten
 
+Zwei externe Dienste werden angefragt, beide nur auf Zuruf:
+Google Gemini fuer die Bildanalyse (Bild + Notiz) und Open Food Facts fuer
+Barcodes (nur die Nummer). Sonst geht nichts nach draussen.
+
 Alles liegt im `localStorage` des Browsers — nichts wird an einen eigenen Server
 geschickt. Nur Bild und Notiz gehen zur Analyse an die Google-API.
 Beim Loeschen der Browserdaten ist alles weg, also ab und zu unter

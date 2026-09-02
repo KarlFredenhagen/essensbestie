@@ -1,0 +1,1 @@
+1287 || el.textContent = n===0 ? '🔥 Serie starten' : `🔥 ${n} ${n===1?'Tag':'Tage'}`;
