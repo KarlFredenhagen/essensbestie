@@ -2,15 +2,35 @@
   "name": "Essensbestie",
   "short_name": "Essensbestie",
   "description": "Foto vom Essen, Makros geschätzt. Kalorien, Protein, Wasser und Streak an einem Ort.",
+  "id": "/essensbestie/",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#0f1115",
   "theme_color": "#0f1115",
   "lang": "de",
+  "dir": "ltr",
+  "categories": ["health", "lifestyle", "food"],
   "icons": [
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+    { "src": "icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mahlzeit erfassen",
+      "short_name": "Neu",
+      "description": "Foto machen und Nährwerte berechnen",
+      "url": "./index.html?view=neu",
+      "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Rezeptideen",
+      "short_name": "Ideen",
+      "description": "Proteinreiche Ideen im Restbudget",
+      "url": "./index.html?view=ideen",
+      "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
   ]
 }

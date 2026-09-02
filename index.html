@@ -2,13 +2,16 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0f1115">
 <title>Essensbestie</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Essensbestie">
+<meta name="format-detection" content="telephone=no">
 <style>
 :root{
   --bg:#f6f5f2; --card:#ffffff; --card-2:#f0efec; --text:#16181d; --muted:#6b7280;
@@ -28,11 +31,22 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
+html{overscroll-behavior-y:none}
 body{
   background:var(--bg); color:var(--text);
   font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   -webkit-font-smoothing:antialiased;
   padding-bottom:calc(78px + env(safe-area-inset-bottom));
+  /* Wie eine App anfassen: kein Textmarkieren, kein blauer Tap-Blitz,
+     kein Gummiband-Scrollen, keine Lupe beim Langdruecken. */
+  -webkit-user-select:none; user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;
+  overscroll-behavior-y:none;
+  touch-action:manipulation;
+}
+input,textarea,.selectable,.selectable *{
+  -webkit-user-select:text; user-select:text; -webkit-touch-callout:default
 }
 .wrap{max-width:620px;margin:0 auto;padding:0 16px}
 header{
@@ -72,6 +86,41 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 0
 .row{display:flex;gap:10px}
 .row>*{flex:1;min-width:0}
 .hint{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+
+/* Eigenes Dropdown statt des Systempickers */
+.cs{position:relative}
+.cs>select{display:none!important}
+.cs-btn{
+  width:100%;text-align:left;background:var(--card-2);border:1px solid var(--line);color:var(--text);
+  padding:12px 40px 12px 14px;border-radius:12px;font-size:15px;font-weight:500;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative
+}
+.cs-btn::after{
+  content:'';position:absolute;right:16px;top:50%;width:7px;height:7px;
+  border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);
+  transform:translateY(-72%) rotate(45deg);transition:transform .2s
+}
+.cs.open .cs-btn{border-color:var(--accent)}
+.cs.open .cs-btn::after{transform:translateY(-28%) rotate(225deg)}
+.cs-panel{
+  position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:45;
+  background:var(--card);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);
+  max-height:266px;overflow-y:auto;padding:5px;animation:fadeUp .16s ease both
+}
+.cs-opt{
+  display:block;width:100%;text-align:left;background:none;border:none;color:var(--text);
+  padding:11px 12px;border-radius:9px;font-size:14.5px;font-weight:500
+}
+.cs-opt.on{background:var(--accent-soft);color:var(--accent);font-weight:650}
+
+/* API-Key: bewusst kein type=password, sonst mischt sich der Passwortmanager ein */
+.pw{position:relative}
+.pw input{padding-right:48px}
+.pw input.masked{-webkit-text-security:disc;text-security:disc;letter-spacing:.08em}
+.pw-eye{
+  position:absolute;right:5px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--muted);font-size:15px;padding:10px 11px;line-height:1
+}
 .hidden{display:none!important}
 .sep{height:1px;background:var(--line);margin:16px 0}
 
@@ -402,7 +451,7 @@ nav button.on .ico{transform:scale(1.16) translateY(-1px)}
           <div class="macro f"><div class="v" id="mFat">–</div><div class="k">Fett</div></div>
         </div>
         <div id="rExtra" class="hint" style="margin-top:10px"></div>
-        <div id="rIngs" style="margin-top:12px"></div>
+        <div id="rIngs" class="selectable" style="margin-top:12px"></div>
         <div id="rNote" class="hint" style="margin-top:12px"></div>
         <button class="btn" id="save" style="margin-top:16px">Hinzufügen</button>
       </div>
@@ -455,7 +504,12 @@ nav button.on .ico{transform:scale(1.16) translateY(-1px)}
     <div class="card pad">
       <div class="field">
         <label for="key">API-Key</label>
-        <input type="password" id="key" placeholder="AIza…" autocomplete="off" spellcheck="false">
+        <div class="pw">
+          <input type="text" id="key" class="masked" placeholder="AIza…" name="eb-token"
+                 autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
+                 data-lpignore="true" data-1p-ignore="true">
+          <button type="button" class="pw-eye" id="keyEye" title="Anzeigen">👁</button>
+        </div>
         <div class="hint">Kostenlos auf <b>aistudio.google.com/apikey</b> erstellen — ohne Kreditkarte. Der Key bleibt nur in diesem Browser.</div>
       </div>
       <div class="field">
@@ -606,6 +660,68 @@ function toast(msg){
   const t=$('#toast'); t.textContent=msg; t.classList.add('on');
   clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2300);
 }
+
+/* ---- App-Gefuehl: kurzer Impuls beim Antippen ---- */
+const tap = () => { try{ navigator.vibrate && navigator.vibrate(8); }catch{} };
+
+/* ---- Eigenes Dropdown: das native <select> bleibt als Zustand erhalten ---- */
+function closeSelects(keep){
+  $$('.cs.open').forEach(w => {
+    if(w === keep) return;
+    w.classList.remove('open');
+    w.querySelector('.cs-panel').classList.add('hidden');
+  });
+}
+function syncSelect(sel){
+  const {btn, panel} = sel._cs;
+  btn.textContent = sel.options[sel.selectedIndex]?.textContent || '–';
+  panel.innerHTML = '';
+  [...sel.options].forEach((o, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'cs-opt' + (i===sel.selectedIndex ? ' on' : '');
+    b.textContent = o.textContent;
+    b.onclick = e => {
+      e.stopPropagation();
+      sel.value = o.value;
+      closeSelects();
+      syncSelect(sel);
+      tap();
+      sel.dispatchEvent(new Event('change'));
+    };
+    panel.appendChild(b);
+  });
+}
+function enhanceSelect(sel){
+  if(!sel) return;
+  if(sel._cs){ syncSelect(sel); return; }
+  const wrap = document.createElement('div');
+  wrap.className = 'cs';
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(sel);
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'cs-btn';
+  const panel = document.createElement('div');
+  panel.className = 'cs-panel hidden';
+  wrap.append(btn, panel);
+  sel._cs = {wrap, btn, panel};
+  btn.onclick = e => {
+    e.stopPropagation();
+    const open = !wrap.classList.contains('open');
+    closeSelects(open ? wrap : null);
+    wrap.classList.toggle('open', open);
+    panel.classList.toggle('hidden', !open);
+    if(open){ tap(); panel.scrollTop = Math.max(0, sel.selectedIndex*44 - 88); }
+  };
+  syncSelect(sel);
+}
+const syncAllSelects = () => $$('select').forEach(enhanceSelect);
+document.addEventListener('click', () => closeSelects());
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeSelects(); });
+// Langes Druecken soll nichts markieren und nicht "In Chrome suchen" anbieten.
+document.addEventListener('contextmenu', e => {
+  if(!e.target.closest('input, textarea, .selectable')) e.preventDefault();
+});
 
 /* ---- Animationen ---- */
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -775,6 +891,7 @@ function renderModelSelect(){
   if(!list.some(m => m.id===cur)) html += `<option value="${esc(cur)}">${esc(cur)}</option>`;
   $('#model').innerHTML = html;
   $('#model').value = cur;
+  enhanceSelect($('#model'));
 
   const hidden = all.length - curated(all).length;
   $('#modelHint').innerHTML =
@@ -924,7 +1041,7 @@ function show(v){
   if(v==='set')     loadSettings();
   animIn($('#v-'+v));
 }
-$$('nav button').forEach(b => b.onclick = ()=>show(b.dataset.v));
+$$('nav button').forEach(b => b.onclick = ()=>{ tap(); show(b.dataset.v); });
 
 /* ============ Neu: Slot + Foto ============ */
 let pickedSlot = defaultSlot();
@@ -933,7 +1050,7 @@ let photoFull=null, photoThumb=null;
 function renderSlotPick(){
   $('#slotPick').innerHTML = SLOTS.map(s =>
     `<button data-s="${s.id}" class="${s.id===pickedSlot?'on':''}"><span class="em">${s.em}</span>${s.name}</button>`).join('');
-  $$('#slotPick button').forEach(b => b.onclick = ()=>{ pickedSlot=b.dataset.s; renderSlotPick(); });
+  $$('#slotPick button').forEach(b => b.onclick = ()=>{ pickedSlot=b.dataset.s; tap(); renderSlotPick(); });
 }
 
 async function pickFile(file){
@@ -1026,7 +1143,7 @@ function renderResult(){
   $('#portion').innerHTML = FACTORS.map(([f,l]) =>
     `<button data-f="${f}" class="${f===factor?'on':''}">${l}</button>`).join('');
   $$('#portion button').forEach(b => b.onclick=()=>{
-    factor = Number(b.dataset.f); renderResult();
+    factor = Number(b.dataset.f); tap(); renderResult();
     ['#mKcal','#mProt','#mCarb','#mFat'].forEach(id => bump($(id)));
   });
 
@@ -1214,7 +1331,7 @@ function renderDay(){
 $$('#waterCard [data-w]').forEach(b => b.onclick = ()=>{
   const cur = dayData(viewDate).water || 0;
   setDayData(viewDate, {water: Math.max(0, cur + Number(b.dataset.w))});
-  renderDay();
+  tap(); renderDay();
   bump($('#waterNow'));
 });
 
@@ -1245,7 +1362,7 @@ function renderIdeas(){
   $('#prefs').value = store.prefs;
   $('#recSlot').innerHTML = SLOTS.map(s =>
     `<button data-s="${s.id}" class="${s.id===recSlot?'on':''}"><span class="em">${s.em}</span>${s.name}</button>`).join('');
-  $$('#recSlot button').forEach(b => b.onclick = ()=>{ recSlot=b.dataset.s; renderIdeas(); });
+  $$('#recSlot button').forEach(b => b.onclick = ()=>{ recSlot=b.dataset.s; tap(); renderIdeas(); });
 }
 
 let recipes = [];
@@ -1296,7 +1413,7 @@ Antworte ausschließlich als JSON in genau dieser Form:
 function renderRecipes(){
   if(!recipes.length){ $('#recipes').innerHTML=''; return; }
   $('#recipes').innerHTML = `<h2>Vorschläge</h2><div class="card pad">` + recipes.map((r,i)=>`
-    <div class="rec">
+    <div class="rec selectable">
       <div class="h">
         <div style="flex:1">
           <b>${esc(r.titel)}</b>
@@ -1484,8 +1601,10 @@ function loadSettings(){
     `<button data-m="${k}" class="${m[k]?'on':''}">${t} ${m[k]?'✓':''}<small>${d}</small></button>`).join('');
   $$('#mods button').forEach(b => b.onclick = ()=>{
     const mm = store.mods; mm[b.dataset.m] = !mm[b.dataset.m]; store.mods = mm;
-    loadSettings(); renderStreak();
+    tap(); loadSettings(); renderStreak();
   });
+
+  syncAllSelects();
 }
 
 function readProfile(){
@@ -1517,6 +1636,11 @@ $('#saveGoals').onclick = ()=>{
   loadSettings(); renderDay(); toast('Ziele gespeichert');
 };
 $('#key').onchange = ()=>{ store.key = $('#key').value.trim(); localStorage.removeItem(K.models); };
+$('#keyEye').onclick = ()=>{
+  const masked = $('#key').classList.toggle('masked');
+  $('#keyEye').textContent = masked ? '👁' : '🙈';
+  $('#keyEye').title = masked ? 'Anzeigen' : 'Verbergen';
+};
 $('#model').onchange = ()=>{
   store.model = $('#model').value;
   store.pinned = true;            // ab jetzt ist das deine Wahl, nicht meine
@@ -1575,7 +1699,9 @@ function renderOnb(){
       <div class="card pad">
         <div class="field">
           <label for="onbKey">Gemini API-Key</label>
-          <input type="password" id="onbKey" placeholder="AIza…" autocomplete="off" spellcheck="false" value="${esc(store.key)}">
+          <input type="text" id="onbKey" placeholder="AIza…" name="eb-token" value="${esc(store.key)}"
+                 autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
+                 data-lpignore="true" data-1p-ignore="true">
           <div class="hint">Öffne <b>aistudio.google.com/apikey</b>, melde dich mit deinem Google-Konto an und klick auf „Create API key". Kopier den Schlüssel hier rein — er bleibt nur auf diesem Gerät.</div>
         </div>
       </div>
@@ -1687,9 +1813,15 @@ function renderOnb(){
 /* ============ Start ============ */
 renderSlotPick();
 loadSettings();
+syncAllSelects();
 renderDay();
 renderStreak();
-show('heute');
+
+// App-Verknuepfungen (Icon lange druecken) starten direkt in einer Ansicht.
+const startView = new URLSearchParams(location.search).get('view');
+show(VIEWS.includes(startView) ? startView : 'heute');
+if(startView) history.replaceState(null, '', location.pathname);
+
 if(!store.onbDone) startOnb(0);
 
 if('serviceWorker' in navigator && location.protocol!=='file:'){

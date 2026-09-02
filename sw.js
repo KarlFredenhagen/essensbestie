@@ -1,6 +1,6 @@
 /* Offline-Huelle fuer Essensbestie. Die Gemini-API wird nie gecacht. */
-const CACHE = 'essensbestie-v1';
-const SHELL = ['./', './index.html', './manifest.json', './icon.svg'];
+const CACHE = 'essensbestie-v2';
+const SHELL = ['./', './index.html', './manifest.json', './icon.svg', './icon-maskable.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
