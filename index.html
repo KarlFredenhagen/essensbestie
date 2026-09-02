@@ -2031,23 +2031,26 @@ function renderIdeas(){
   const b = recipeBudget();
   const name = SLOTS.find(s => s.id===recSlot)?.name || '';
   $('#recBudgetLine').textContent = b.limit
-    ? (b.kcal > 0
-        ? `Für ${name} gilt deine Grenze von ${b.limit} kcal — davon sind noch ${b.kcal} kcal frei.`
-        : `Deine Grenze für ${name} (${b.limit} kcal) ist heute schon erreicht.`)
-    : `Ohne eigene Grenze rechne ich mit dem ganzen Restbudget des Tages.`;
+    ? (b.rest > 0
+        ? `Grenze für ${name}: ${b.limit} kcal, davon ${b.rest} frei. Ich suche bis ca. ${b.soft} kcal — etwas Spielraum, damit auch was Sättigendes dabei ist.`
+        : `Deine Grenze für ${name} (${b.limit} kcal) ist heute schon voll. Ich zeige trotzdem kleine Ideen bis ca. ${b.soft} kcal.`)
+    : `Ohne eigene Grenze zählt das Restbudget des Tages: ${b.dayRest} kcal frei, gesucht wird bis ca. ${b.soft} kcal.`;
 }
+
+// Grenzen sind Leitplanken, keine Mauern: unter REC_MIN lohnt kein Rezept,
+// und ein kleiner Puffer nach oben ist besser als ein Vorschlag aus Luft.
+const REC_MIN = 200;
+const REC_TOL = 60;
 
 // Der engere von beiden Werten zaehlt: Rest des Tages oder Rest der Mahlzeit.
 function recipeBudget(){
   const g = store.goals, t = totalsFor(todayIso());
   const dayRest = Math.max(0, r0(g.kcal - t.kcal));
   const limit = Number(store.limits[recSlot]) || 0;
-  const rest = slotRest(recSlot);
-  return {
-    limit,
-    kcal: limit ? Math.min(dayRest, rest) : dayRest,
-    dayRest
-  };
+  const rest = limit ? Math.min(dayRest, slotRest(recSlot)) : dayRest;
+  // Auch ohne eigene Grenze bleibt eine Mahlzeit eine Mahlzeit und kein Tagesbedarf.
+  const capMeal = Math.max(REC_MIN, r0(g.kcal * 0.4 / 10) * 10);
+  return {limit, rest, dayRest, soft: Math.min(Math.max(REC_MIN, rest + REC_TOL), capMeal)};
 }
 
 let recipes = [], recBudgetUsed = 0;
@@ -2058,24 +2061,20 @@ $('#getRecipes').onclick = async ()=>{
   const g = store.goals, t = totalsFor(todayIso());
   const slotName = SLOTS.find(s=>s.id===recSlot)?.name || 'Mahlzeit';
   const b = recipeBudget();
-  if(b.limit && b.kcal <= 0){
-    setStatus('#recStatus','err',
-      `Deine Grenze für ${slotName} (${b.limit} kcal) ist heute erreicht. Wähl eine andere Mahlzeit oder pass die Grenze unter „Mehr" an.`);
-    return;
-  }
-  const rk = Math.max(80, b.kcal);
+  const rk = b.soft;
+  const lo = Math.max(70, r0(rk*0.45));
   const rp = Math.max(10, r0(g.prot-t.prot));
 
   $('#getRecipes').disabled = true;
   $('#recipes').innerHTML = '';
   setStatus('#recStatus','load','Ideen werden gesucht…');
   try{
-    const prompt = `Schlage genau 3 proteinreiche Rezepte für ${slotName} vor, die in ein Budget von ${rk} kcal passen.
+    const prompt = `Schlage genau 3 proteinreiche Rezepte für ${slotName} vor.
 
-Rahmen:
-- HARTE OBERGRENZE: ${rk} kcal pro Rezept. Kein Vorschlag darf darüber liegen, auch nicht knapp.${
-  b.limit ? `\n- Der Nutzer hat ${slotName} bewusst auf ${b.limit} kcal begrenzt. Halte dich strikt daran und schlage nichts vor, was sich nur durch eine Mini-Portion in die Grenze rechnen lässt — die Gerichte selbst müssen in diese Größenordnung passen.` : ''}
-- Jedes Rezept liegt zwischen ${Math.max(60, r0(rk*0.4))} und ${rk} kcal.
+Budget:
+- Zielbereich ${lo} bis ${rk} kcal pro Rezept. ${rk} kcal ist die Obergrenze, geh nicht darüber.
+- Rechnerisch frei sind noch ${b.rest} kcal. Etwas darüber ist ausdrücklich in Ordnung — lieber ein sättigendes Gericht knapp drüber als eine Alibi-Portion.${
+  b.limit ? `\n- Der Nutzer hat ${slotName} auf ${b.limit} kcal begrenzt. Bleib in dieser Größenordnung. Schlage nichts vor, das nur durch eine unrealistisch kleine Portion hineinpasst — die Gerichte selbst müssen dorthin gehören.` : ''}
 - Ziel sind mindestens ${Math.min(Math.max(8, r0(rp/2)), r0(rk/12))} g Protein pro Rezept, gern mehr.
 - Noch offen heute: ${rp} g Protein, ${Math.max(0,r0(g.carb-t.carb))} g Kohlenhydrate, ${Math.max(0,r0(g.fat-t.fat))} g Fett.
 - Vorlieben und No-Gos des Nutzers: ${store.prefs || '(keine Angabe)'}
