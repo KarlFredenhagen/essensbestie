@@ -40,8 +40,14 @@ aber nie deinen Schluessel.
 - Portionsfaktor (1/2 bis 2x) vor dem Speichern
 - Vier Sektionen: Fruehstueck, Mittagessen, Abendessen, Snacks
 - Einrichtungs-Assistent: Geschlecht, Alter, Groesse, Gewicht, Aktivitaet, Ziel
-  -> Kalorien- und Makroziele nach Mifflin-St-Jeor, jederzeit ueberschreibbar
+  -> Kalorienziel nach Mifflin-St-Jeor, jederzeit ueberschreibbar
+- Makros als Prozentverteilung der Kalorien (Standard 50 % Kohlenhydrate,
+  30 % Protein, 20 % Fett) mit Gramm-Anzeige daneben; Presets fuer Protein,
+  Low Carb und Aufbau, oder frei einstellbar
+- Gewicht per Plus/Minus-Stepper in 100-g-Schritten, halten beschleunigt
 - Optionale Module: Wasser, Gewichtstrend, Streak, Rezeptideen
+- Modell-Auswahl fragt den eigenen Key, welche Modelle er freischaltet;
+  bei einem 404 schaltet die App automatisch auf ein verfuegbares um
 - Rezeptvorschlaege: drei proteinreiche Ideen, die ins Restbudget des Tages passen,
   auf Wunsch direkt als Mahlzeit eintragbar
 - Verlauf ueber 30 Tage, Durchschnitte, Export als JSON und CSV

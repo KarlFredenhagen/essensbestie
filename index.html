@@ -81,6 +81,19 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 0
 .seg button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 .seg.col button{flex:1 1 100%;text-align:left;padding:13px 14px}
 .seg.col button small{display:block;font-weight:500;font-size:12px;opacity:.75;margin-top:2px}
+.seg.sm button{min-width:0;padding:9px 4px;font-size:12.5px;line-height:1.25}
+.seg.sm button small{display:block;font-weight:500;font-size:10.5px;opacity:.7;margin-top:2px;font-variant-numeric:tabular-nums}
+
+/* Makro-Verteilung */
+.sp{display:flex;align-items:center;gap:9px;margin-top:10px}
+.sp .dot{width:9px;height:9px;border-radius:99px;flex:none}
+.sp b{flex:1;min-width:0;font-size:13.5px;font-weight:600}
+.sp input{width:68px;flex:none;text-align:center;padding:10px 4px}
+.sp .pc{color:var(--muted);font-size:13.5px}
+.sp .g{width:64px;flex:none;text-align:right;color:var(--muted);font-size:13.5px;font-variant-numeric:tabular-nums}
+.sumline{font-size:12.5px;font-weight:600;margin-top:12px;text-align:right}
+.sumline.good{color:var(--ok)}
+.sumline.bad{color:var(--err)}
 
 /* Foto */
 .shot{
@@ -145,9 +158,23 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 0
 
 /* Wasser */
 .glasses{display:flex;gap:5px;flex-wrap:wrap;margin:12px 0 4px}
-.glass{width:22px;height:30px;border-radius:4px 4px 8px 8px;border:2px solid var(--line);background:var(--card-2)}
+.glass{width:22px;height:30px;border-radius:4px 4px 8px 8px;border:2px solid var(--line);background:var(--card-2);transition:background .25s,border-color .25s}
 .glass.on{background:var(--water);border-color:var(--water)}
-.water-big{font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--water)}
+.water-big{font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--water);display:inline-block}
+
+/* Gewicht-Stepper */
+.stepper{display:flex;align-items:center;gap:14px;margin:4px 0 2px}
+.stepper .step{
+  width:56px;height:56px;flex:none;border-radius:99px;
+  background:var(--card-2);border:1px solid var(--line);color:var(--text);
+  font-size:26px;font-weight:600;line-height:1;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  user-select:none;-webkit-user-select:none;touch-action:manipulation
+}
+.stepper .step:active,.stepper .step.held{background:var(--accent);color:#fff;border-color:var(--accent)}
+.stepper .val{flex:1;min-width:0;text-align:center;display:flex;align-items:baseline;justify-content:center;gap:5px}
+.stepper .val b{font-size:34px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;display:inline-block}
+.stepper .val small{font-size:15px;color:var(--muted);font-weight:600}
 
 /* Verlauf */
 .hrow{display:flex;align-items:center;gap:12px;padding:12px;border-top:1px solid var(--line);cursor:pointer}
@@ -185,8 +212,25 @@ nav button{
   padding:9px 0 10px;display:flex;flex-direction:column;align-items:center;gap:3px;
   font-size:10.5px;font-weight:600;border-radius:0
 }
-nav button .ico{font-size:19px;line-height:1}
+nav button .ico{font-size:19px;line-height:1;transition:transform .22s cubic-bezier(.3,1.4,.5,1)}
 nav button.on{color:var(--accent)}
+nav button.on .ico{transform:scale(1.16) translateY(-1px)}
+
+/* Animationen */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(1)}42%{transform:scale(1.18)}100%{transform:scale(1)}}
+@keyframes glassIn{from{transform:scale(.45);opacity:.25}to{transform:scale(1);opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.anim-in{animation:fadeUp .3s cubic-bezier(.2,.7,.3,1) both}
+.anim-stagger>*{animation:fadeUp .32s cubic-bezier(.2,.7,.3,1) both}
+.bump{animation:pop .34s cubic-bezier(.3,1.4,.5,1)}
+.shake{animation:shake .3s ease}
+.glass.fresh{animation:glassIn .34s cubic-bezier(.3,1.5,.5,1)}
+#result{animation:fadeUp .3s cubic-bezier(.2,.7,.3,1) both}
+.status{animation:fadeUp .22s ease both}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
 
 /* Status */
 .status{display:flex;gap:10px;align-items:center;padding:13px 14px;border-radius:12px;font-size:14px;margin-top:14px}
@@ -285,12 +329,14 @@ nav button.on{color:var(--accent)}
     <div id="weightCard" class="hidden">
       <h2>Gewicht</h2>
       <div class="card pad">
-        <div class="row" style="align-items:flex-end">
-          <div><label for="wIn">Heute in kg</label>
-            <input type="number" id="wIn" step="0.1" inputmode="decimal" placeholder="z.B. 78.4"></div>
-          <button class="btn-ghost" id="wSave" style="flex:0 0 auto;padding:12px 18px">Eintragen</button>
+        <div class="stepper">
+          <button class="step" id="wMinus" data-d="-0.1">−</button>
+          <div class="val"><b id="wVal">–</b><small>kg</small></div>
+          <button class="step" id="wPlus" data-d="0.1">+</button>
         </div>
-        <div class="hint" id="wTrend"></div>
+        <div class="hint" style="text-align:center;margin-top:0">In 100-g-Schritten · gedrückt halten geht schneller</div>
+        <button class="btn" id="wSave" style="margin-top:14px">Eintragen</button>
+        <div class="hint" id="wTrend" style="text-align:center"></div>
       </div>
     </div>
 
@@ -405,11 +451,11 @@ nav button.on{color:var(--accent)}
       </div>
       <div class="field">
         <label for="model">Modell</label>
-        <select id="model">
-          <option value="gemini-2.5-flash">Gemini 2.5 Flash — empfohlen</option>
-          <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite — schneller, gröber</option>
-          <option value="gemini-2.5-pro">Gemini 2.5 Pro — genauer, kleineres Freikontingent</option>
-        </select>
+        <div class="row">
+          <select id="model"></select>
+          <button class="btn-ghost" id="loadModels" style="flex:0 0 auto;padding:12px 15px" title="Verfügbare Modelle laden">↻</button>
+        </div>
+        <div class="hint" id="modelHint">Mit ↻ lädst du die Modelle, die dein Key wirklich freischaltet.</div>
       </div>
     </div>
 
@@ -448,15 +494,8 @@ nav button.on{color:var(--accent)}
 
     <h2>Tagesziele <span class="r" id="goalMode"></span></h2>
     <div class="card pad">
-      <div class="row">
-        <div><label for="gKcal">kcal</label><input type="number" id="gKcal" inputmode="numeric"></div>
-        <div><label for="gProt">Protein g</label><input type="number" id="gProt" inputmode="numeric"></div>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <div><label for="gCarb">Kohlenh. g</label><input type="number" id="gCarb" inputmode="numeric"></div>
-        <div><label for="gFat">Fett g</label><input type="number" id="gFat" inputmode="numeric"></div>
-      </div>
-      <div class="field" style="margin-top:12px">
+      <div id="setSplit"></div>
+      <div class="field" style="margin-top:16px">
         <label for="gWater">Wasserziel ml</label><input type="number" id="gWater" inputmode="numeric">
       </div>
       <button class="btn" id="saveGoals" style="margin-top:16px">Ziele speichern</button>
@@ -502,14 +541,27 @@ const SLOTS = [
   {id:'abend',       em:'🌙', name:'Abendessen'},
   {id:'snack',       em:'🍎', name:'Snacks'}
 ];
-const DEF_GOALS = {kcal:2000, prot:130, carb:220, fat:65, water:2500};
+const DEF_SPLIT = {carb:50, prot:30, fat:20};
+const SPLIT_PRESETS = [
+  {name:'Standard', carb:50, prot:30, fat:20},
+  {name:'Protein',  carb:40, prot:40, fat:20},
+  {name:'Low Carb', carb:25, prot:35, fat:40},
+  {name:'Aufbau',   carb:55, prot:25, fat:20}
+];
+const MACROS = [
+  {k:'carb', name:'Kohlenhydrate', perG:4, color:'var(--carb)'},
+  {k:'prot', name:'Protein',       perG:4, color:'var(--prot)'},
+  {k:'fat',  name:'Fett',          perG:9, color:'var(--fat)'}
+];
+const DEF_GOALS = {kcal:2000, prot:150, carb:250, fat:44, water:2500, split:DEF_SPLIT};
 const DEF_PROFILE = {sex:'m', age:25, height:178, weight:75, act:'1.375', goal:'hold'};
 const DEF_MODS = {water:true, weight:true, streak:true, recipes:true};
 const FACTORS = [[0.5,'½'],[0.75,'¾'],[1,'1×'],[1.5,'1½'],[2,'2×']];
 
 /* ============ Speicher ============ */
 const K = {key:'eb_key', model:'eb_model', goals:'eb_goals', entries:'eb_entries',
-           days:'eb_days', profile:'eb_profile', mods:'eb_mods', prefs:'eb_prefs', onb:'eb_onb'};
+           days:'eb_days', profile:'eb_profile', mods:'eb_mods', prefs:'eb_prefs',
+           onb:'eb_onb', models:'eb_models'};
 
 function jget(k, def){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?def:v; }catch{ return def; } }
 function jset(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ toast('Speicher voll — alte Fotos werden knapp'); } }
@@ -542,6 +594,50 @@ function toast(msg){
   const t=$('#toast'); t.textContent=msg; t.classList.add('on');
   clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2300);
 }
+
+/* ---- Animationen ---- */
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function replay(el, cls){
+  if(!el || REDUCED) return;
+  el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
+}
+const bump  = el => replay(el, 'bump');
+const shake = el => replay(el, 'shake');
+function animIn(el, stagger){
+  if(!el || REDUCED) return;
+  el.classList.remove('anim-in','anim-stagger'); void el.offsetWidth;
+  el.classList.add(stagger ? 'anim-stagger' : 'anim-in');
+  if(stagger) [...el.children].forEach((c,i)=> c.style.animationDelay = Math.min(i*55, 330)+'ms');
+}
+// Zaehlt eine Zahl hoch statt sie springen zu lassen.
+function countTo(el, to, dur){
+  const from = Number(el.dataset.v ?? to);
+  el.dataset.v = to;
+  if(REDUCED || from===to){ el.textContent = to; return; }
+  const t0 = performance.now();
+  const tick = now => {
+    const k = Math.min(1, (now-t0)/(dur||650));
+    el.textContent = Math.round(from + (to-from)*(1-Math.pow(1-k,3)));
+    if(k<1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+// Wiederholt die Aktion, solange der Knopf gehalten wird — mit Beschleunigung.
+function holdRepeat(el, fn){
+  let t, iv, n;
+  const stop = ()=>{ clearTimeout(t); clearInterval(iv); el.classList.remove('held'); };
+  const start = e => {
+    if(e.button) return;
+    e.preventDefault();
+    el.classList.add('held');
+    n = 0; fn();
+    t = setTimeout(()=>{
+      iv = setInterval(()=>{ fn(); if(++n===12){ clearInterval(iv); iv = setInterval(fn, 45); } }, 95);
+    }, 420);
+  };
+  el.addEventListener('pointerdown', start);
+  ['pointerup','pointerleave','pointercancel'].forEach(ev => el.addEventListener(ev, stop));
+}
 function dayLabel(s){
   if(s===todayIso()) return 'Heute';
   if(s===shiftIso(todayIso(),-1)) return 'Gestern';
@@ -565,7 +661,12 @@ function setDayData(date, patch){
 }
 
 /* ============ Zielberechnung (Mifflin-St Jeor) ============ */
-function calcGoals(p){
+function gramsFor(kcal, split){
+  const out = {};
+  MACROS.forEach(m => out[m.k] = r0(kcal * (Number(split?.[m.k])||0) / 100 / m.perG));
+  return out;
+}
+function calcGoals(p, split){
   const w = num(p.weight), h = num(p.height), a = num(p.age);
   let bmr = 10*w + 6.25*h - 5*a;
   bmr += p.sex==='m' ? 5 : p.sex==='w' ? -161 : -78;
@@ -575,16 +676,9 @@ function calcGoals(p){
   if(p.goal==='cut')  kcal = tdee - 500;
   if(p.goal==='bulk') kcal = tdee + 300;
   kcal = Math.max(kcal, bmr*1.05, p.sex==='w'?1200:1500);   // nie unter Grundumsatz
+  kcal = r0(kcal/10)*10;
 
-  const prot = w * (p.goal==='cut' ? 2.0 : p.goal==='bulk' ? 1.9 : 1.6);
-  const fat  = w * (p.goal==='cut' ? 0.8 : 0.9);
-  const carb = Math.max(40, (kcal - prot*4 - fat*9) / 4);
-
-  return {
-    bmr: r0(bmr), tdee: r0(tdee),
-    kcal: r0(kcal/10)*10, prot: r0(prot), carb: r0(carb), fat: r0(fat),
-    water: r0(w*33/50)*50
-  };
+  return {bmr:r0(bmr), tdee:r0(tdee), kcal, ...gramsFor(kcal, split||DEF_SPLIT), water:r0(w*33/50)*50};
 }
 
 /* ============ Bilder ============ */
@@ -612,10 +706,52 @@ function resize(dataUrl, max, q){
 }
 
 /* ============ Gemini ============ */
-async function gemini(parts, schema, temp){
+const API = 'https://generativelanguage.googleapis.com/v1beta';
+const FALLBACK_MODELS = [
+  {id:'gemini-2.5-flash',      label:'Gemini 2.5 Flash'},
+  {id:'gemini-2.5-flash-lite', label:'Gemini 2.5 Flash Lite'},
+  {id:'gemini-2.5-pro',        label:'Gemini 2.5 Pro'}
+];
+// Modelle, die zwar generateContent koennen, aber nichts fuer uns sind.
+const UNFIT = /embedding|aqa|imagen|veo|tts|audio|image-generation|robotics|learnlm/i;
+
+const modelList = () => { const c = jget(K.models, null); return (c && c.length) ? c : FALLBACK_MODELS; };
+const pickBest = list => (list.find(m => /flash/.test(m.id) && !/lite/.test(m.id))
+                       || list.find(m => /flash/.test(m.id)) || list[0]).id;
+
+// Fragt beim Key nach, welche Modelle er wirklich freischaltet.
+async function fetchModels(quiet){
+  const key = store.key.trim();
+  if(!key){ if(!quiet) toast('Erst API-Key eintragen'); return null; }
+  try{
+    const res = await fetch(API+'/models?pageSize=200', {headers:{'x-goog-api-key':key}});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const list = ((await res.json()).models || [])
+      .filter(m => (m.supportedGenerationMethods||[]).includes('generateContent'))
+      .map(m => ({id:String(m.name||'').replace(/^models\//,''), label:m.displayName || m.name}))
+      .filter(m => m.id && !UNFIT.test(m.id))
+      .sort((a,b) => a.id.localeCompare(b.id));
+    if(!list.length) throw new Error('leere Liste');
+    jset(K.models, list);
+    return list;
+  }catch{
+    if(!quiet) toast('Modell-Liste konnte nicht geladen werden');
+    return null;
+  }
+}
+
+function renderModelSelect(){
+  const list = modelList(), cur = store.model;
+  let html = list.map(m => `<option value="${esc(m.id)}">${esc(m.label)}</option>`).join('');
+  if(!list.some(m => m.id===cur)) html += `<option value="${esc(cur)}">${esc(cur)} — gespeichert</option>`;
+  $('#model').innerHTML = html;
+  $('#model').value = cur;
+}
+
+async function gemini(parts, schema, temp, retried){
   const key = store.key.trim();
   if(!key) throw new Error('Kein API-Key hinterlegt. Trage ihn unter „Mehr" ein.');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(store.model)}:generateContent`;
+  const url = `${API}/models/${encodeURIComponent(store.model)}:generateContent`;
 
   let res;
   try{
@@ -634,7 +770,18 @@ async function gemini(parts, schema, temp){
     if(res.status===400 && /api.?key/i.test(d)) throw new Error('API-Key wird nicht akzeptiert. Prüf ihn unter „Mehr".');
     if(res.status===403) throw new Error('Zugriff verweigert — Key ungültig oder die Gemini API ist dafür nicht freigeschaltet.');
     if(res.status===429) throw new Error('Freikontingent gerade erschöpft. Kurz warten oder Flash Lite nehmen.');
-    if(res.status===404) throw new Error('Modell nicht verfügbar. Wähl unter „Mehr" ein anderes.');
+    if(res.status===404){
+      // Modellname passt nicht zum Key: echte Liste holen und einmal automatisch umschalten.
+      const list = await fetchModels(true);
+      const best = list && list.length ? pickBest(list) : null;
+      if(best && best!==store.model && !retried){
+        store.model = best;
+        renderModelSelect();
+        toast('Auf '+best+' umgestellt');
+        return gemini(parts, schema, temp, true);
+      }
+      throw new Error(`Modell „${store.model}" gibt es für deinen Key nicht. Lade unter „Mehr" die Modell-Liste (↻) und wähl eins aus.`);
+    }
     if(res.status>=500) throw new Error('Google-Server hat gerade Schluckauf. Nochmal probieren.');
     throw new Error(d || ('Fehler '+res.status));
   }
@@ -704,6 +851,7 @@ function show(v){
   if(v==='ideen')   renderIdeas();
   if(v==='verlauf') renderHistory();
   if(v==='set')     loadSettings();
+  animIn($('#v-'+v));
 }
 $$('nav button').forEach(b => b.onclick = ()=>show(b.dataset.v));
 
@@ -751,6 +899,7 @@ function setStatus(el, kind, msg){
   box.innerHTML = kind==='load'
     ? `<div class="status load"><div class="spin"></div><div>${esc(msg)}</div></div>`
     : `<div class="status err"><div>⚠︎</div><div>${esc(msg)}</div></div>`;
+  if(kind==='err') shake(box.firstElementChild);
 }
 
 $('#analyze').onclick = async ()=>{
@@ -805,7 +954,10 @@ function renderResult(){
 
   $('#portion').innerHTML = FACTORS.map(([f,l]) =>
     `<button data-f="${f}" class="${f===factor?'on':''}">${l}</button>`).join('');
-  $$('#portion button').forEach(b => b.onclick=()=>{ factor=Number(b.dataset.f); renderResult(); });
+  $$('#portion button').forEach(b => b.onclick=()=>{
+    factor = Number(b.dataset.f); renderResult();
+    ['#mKcal','#mProt','#mCarb','#mFat'].forEach(id => bump($(id)));
+  });
 
   $('#mKcal').textContent=s.kcal;
   $('#mProt').textContent=s.prot+' g';
@@ -859,12 +1011,17 @@ function streak(){
   while(dates.has(day)){ n++; day = shiftIso(day,-1); }
   return n;
 }
+let lastStreak = null;
 function renderStreak(){
   const el = $('#streakBadge');
   const n = streak();
   const on = store.mods.streak && n > 0;
   el.classList.toggle('hidden', !on);
-  if(on) el.innerHTML = `🔥 ${n} ${n===1?'Tag':'Tage'}`;
+  if(on){
+    el.innerHTML = `🔥 ${n} ${n===1?'Tag':'Tage'}`;
+    if(lastStreak!=null && n>lastStreak) bump(el);
+  }
+  lastStreak = n;
 }
 
 /* ============ Heute ============ */
@@ -878,14 +1035,18 @@ function totalsFor(date){
   }), {kcal:0,prot:0,carb:0,fat:0});
 }
 
+let lastRenderedDay = null, weightDraft = null;
+
 function renderDay(){
   const g = store.goals, m = store.mods;
   const t = totalsFor(viewDate);
+  const dayChanged = lastRenderedDay !== viewDate;
+  lastRenderedDay = viewDate;
 
   $('#dayLabel').textContent = dayLabel(viewDate);
   $('#dayNext').disabled = viewDate >= todayIso();
 
-  $('#sumKcal').textContent = r0(t.kcal);
+  countTo($('#sumKcal'), r0(t.kcal));
   $('#goalKcal').textContent = '/ ' + g.kcal;
   const arc = $('#ringArc');
   arc.style.strokeDashoffset = 283 - 283*Math.min(1, g.kcal ? t.kcal/g.kcal : 0);
@@ -912,24 +1073,32 @@ function renderDay(){
     $('#waterGoalTxt').textContent = `von ${g.water} ml`;
     const total = Math.max(8, Math.ceil(g.water/250));
     const done  = Math.floor(ml/250);
+    const prevOn = dayChanged ? -1 : $$('#glasses .glass.on').length;
     $('#glasses').innerHTML = Array.from({length:total},(_,i)=>
-      `<div class="glass ${i<done?'on':''}"></div>`).join('');
+      `<div class="glass ${i<done?'on':''} ${(prevOn>=0 && i>=prevOn && i<done)?'fresh':''}"></div>`).join('');
   }
 
   // Gewicht
   $('#weightCard').classList.toggle('hidden', !m.weight);
   if(m.weight){
-    const w = dayData(viewDate).weight;
-    $('#wIn').value = w!=null ? w : '';
     const days = store.days;
     const hist = Object.keys(days).filter(d=>days[d].weight!=null && d<=viewDate).sort();
+    if(weightDraft==null || dayChanged){
+      const w = dayData(viewDate).weight;
+      weightDraft = w!=null ? w
+        : hist.length ? days[hist[hist.length-1]].weight
+        : num(store.profile.weight) || 75;
+    }
+    $('#wVal').textContent = weightDraft.toFixed(1).replace('.', ',');
+    const kg = v => v.toFixed(1).replace('.', ',');
     if(hist.length>=2){
+      const refDay = hist[Math.max(0, hist.length-8)];
       const last = days[hist[hist.length-1]].weight;
-      const ref  = days[hist[Math.max(0,hist.length-8)]].weight;
-      const diff = r1(last-ref);
-      $('#wTrend').textContent = `Zuletzt ${last} kg · ${diff>0?'+':''}${diff} kg gegenüber ${dayLabel(hist[Math.max(0,hist.length-8)])}`;
+      const diff = r1(last - days[refDay].weight);
+      $('#wTrend').textContent =
+        `Zuletzt ${kg(last)} kg · ${diff>0?'+':diff<0?'−':'±'}${kg(Math.abs(diff))} kg gegenüber ${dayLabel(refDay)}`;
     } else {
-      $('#wTrend').textContent = hist.length ? `Zuletzt ${days[hist[0]].weight} kg` : 'Noch kein Wert eingetragen.';
+      $('#wTrend').textContent = hist.length ? `Zuletzt ${kg(days[hist[0]].weight)} kg` : 'Noch kein Wert eingetragen.';
     }
   }
 
@@ -965,6 +1134,7 @@ function renderDay(){
   $$('#slots .add').forEach(b => b.onclick = ()=>{
     pickedSlot = b.dataset.slot; renderSlotPick(); show('neu');
   });
+  if(dayChanged) animIn($('#slots'), true);
 
   renderStreak();
 }
@@ -973,15 +1143,22 @@ $$('#waterCard [data-w]').forEach(b => b.onclick = ()=>{
   const cur = dayData(viewDate).water || 0;
   setDayData(viewDate, {water: Math.max(0, cur + Number(b.dataset.w))});
   renderDay();
+  bump($('#waterNow'));
 });
+
+function stepWeight(d){
+  weightDraft = r1(Math.min(300, Math.max(25, (weightDraft ?? 75) + d)));
+  $('#wVal').textContent = weightDraft.toFixed(1).replace('.', ',');
+}
+holdRepeat($('#wMinus'), ()=>stepWeight(-0.1));
+holdRepeat($('#wPlus'),  ()=>stepWeight( 0.1));
 $('#wSave').onclick = ()=>{
-  const v = num($('#wIn').value);
-  if(v<=0){ toast('Bitte gültiges Gewicht eingeben'); return; }
-  setDayData(viewDate, {weight:r1(v)});
+  if(weightDraft==null){ toast('Kein Wert eingestellt'); return; }
+  setDayData(viewDate, {weight:r1(weightDraft)});
   if(viewDate===todayIso()){
-    const p = store.profile; p.weight = r1(v); store.profile = p;
+    const p = store.profile; p.weight = r1(weightDraft); store.profile = p;
   }
-  renderDay(); toast('Gewicht gespeichert');
+  renderDay(); bump($('#wVal')); toast('Gewicht gespeichert');
 };
 
 /* ============ Ideen ============ */
@@ -1139,20 +1316,92 @@ const MOD_INFO = {
   recipes: ['✨ Rezeptideen', 'Vorschläge im Restbudget']
 };
 
+/* ---- Kalorien- und Makro-Editor, geteilt von Onboarding und Einstellungen ---- */
+function splitEditorHtml(pre, kcal, split){
+  const g = gramsFor(kcal, split);
+  return `
+    <div class="field">
+      <label for="${pre}Kcal">Kalorien pro Tag</label>
+      <input type="number" id="${pre}Kcal" inputmode="numeric" value="${kcal}">
+    </div>
+    <div class="field">
+      <label>Verteilung</label>
+      <div class="seg sm" id="${pre}Presets">${SPLIT_PRESETS.map(x =>
+        `<button type="button" data-carb="${x.carb}" data-prot="${x.prot}" data-fat="${x.fat}">${x.name}<small>${x.carb}/${x.prot}/${x.fat}</small></button>`).join('')}</div>
+    </div>
+    ${MACROS.map(m => `
+      <div class="sp">
+        <span class="dot" style="background:${m.color}"></span>
+        <b>${m.name}</b>
+        <input type="number" id="${pre}${m.k}" inputmode="numeric" min="0" max="100" value="${split[m.k]}">
+        <span class="pc">%</span>
+        <span class="g" id="${pre}${m.k}G">(${g[m.k]} g)</span>
+      </div>`).join('')}
+    <div class="sumline" id="${pre}Sum"></div>`;
+}
+
+function splitEditorValues(pre){
+  const kcal = r0($('#'+pre+'Kcal').value);
+  const split = {}; let sum = 0;
+  MACROS.forEach(m => { const v = r0($('#'+pre+m.k).value); split[m.k] = v; sum += v; });
+  return {kcal, split, sum};
+}
+
+function wireSplitEditor(pre){
+  const upd = ()=>{
+    const {kcal, split, sum} = splitEditorValues(pre);
+    const g = gramsFor(kcal, split);
+    MACROS.forEach(m => {
+      const el = $('#'+pre+m.k+'G');
+      if(el.textContent !== `(${g[m.k]} g)`){ el.textContent = `(${g[m.k]} g)`; bump(el); }
+    });
+    const s = $('#'+pre+'Sum');
+    s.textContent = sum===100 ? 'Summe 100 % ✓' : `Summe ${sum} % — muss 100 ergeben`;
+    s.className = 'sumline ' + (sum===100 ? 'good' : 'bad');
+    $$('#'+pre+'Presets button').forEach(b => b.classList.toggle('on',
+      MACROS.every(m => Number(b.dataset[m.k]) === split[m.k])));
+  };
+  $('#'+pre+'Kcal').oninput = upd;
+  MACROS.forEach(m => $('#'+pre+m.k).oninput = upd);
+  $$('#'+pre+'Presets button').forEach(b => b.onclick = ()=>{
+    MACROS.forEach(m => $('#'+pre+m.k).value = b.dataset[m.k]);
+    upd();
+  });
+  upd();
+}
+
+// Liefert null und meckert, wenn die Eingaben nicht stimmen.
+function readSplitEditor(pre){
+  const {kcal, split, sum} = splitEditorValues(pre);
+  if(kcal < 800 || kcal > 6000){ toast('Kalorienziel bitte zwischen 800 und 6000'); return null; }
+  if(sum !== 100){ toast(`Die Verteilung ergibt ${sum} % — bitte auf 100 % bringen`); return null; }
+  return {kcal, split, ...gramsFor(kcal, split)};
+}
+
 function loadSettings(){
   $('#key').value = store.key;
-  $('#model').value = store.model;
+  renderModelSelect();
+  // Beim ersten Mal die echte Liste im Hintergrund nachladen.
+  if(store.key.trim() && !jget(K.models, null)){
+    fetchModels(true).then(list => {
+      if(!list) return;
+      if(!list.some(m => m.id===store.model)) store.model = pickBest(list);
+      renderModelSelect();
+      $('#modelHint').textContent = `${list.length} Modelle für deinen Key verfügbar.`;
+    });
+  }
 
   const p = store.profile;
   $('#pSex').value=p.sex; $('#pAge').value=p.age; $('#pHeight').value=p.height;
   $('#pWeight').value=p.weight; $('#pAct').value=p.act; $('#pGoal').value=p.goal;
 
   const g = store.goals;
-  $('#gKcal').value=g.kcal; $('#gProt').value=g.prot; $('#gCarb').value=g.carb;
-  $('#gFat').value=g.fat;   $('#gWater').value=g.water;
+  $('#setSplit').innerHTML = splitEditorHtml('g', g.kcal, g.split||DEF_SPLIT);
+  wireSplitEditor('g');
+  $('#gWater').value = g.water;
   $('#goalMode').textContent = g.manual ? 'von dir angepasst' : 'automatisch berechnet';
 
-  const c = calcGoals(p);
+  const c = calcGoals(p, g.split||DEF_SPLIT);
   $('#bmrLine').textContent = `Grundumsatz ca. ${c.bmr} kcal · Gesamtumsatz ca. ${c.tdee} kcal`;
 
   const m = store.mods;
@@ -1176,23 +1425,38 @@ $('#recalc').onclick = ()=>{
     toast('Bitte Alter, Größe und Gewicht prüfen'); return;
   }
   store.profile = p;
-  const c = calcGoals(p);
-  store.goals = {kcal:c.kcal, prot:c.prot, carb:c.carb, fat:c.fat, water:c.water, manual:false};
-  loadSettings(); toast(`Neues Ziel: ${c.kcal} kcal`);
+  weightDraft = null;
+  const split = store.goals.split || DEF_SPLIT;
+  const c = calcGoals(p, split);
+  store.goals = {kcal:c.kcal, prot:c.prot, carb:c.carb, fat:c.fat, water:c.water, split, manual:false};
+  loadSettings(); renderDay(); toast(`Neues Ziel: ${c.kcal} kcal`);
 };
 $('#saveGoals').onclick = ()=>{
+  const v = readSplitEditor('g');
+  if(!v) return;
   store.goals = {
-    kcal: r0($('#gKcal').value)||DEF_GOALS.kcal,
-    prot: r0($('#gProt').value)||DEF_GOALS.prot,
-    carb: r0($('#gCarb').value)||DEF_GOALS.carb,
-    fat:  r0($('#gFat').value) ||DEF_GOALS.fat,
-    water:r0($('#gWater').value)||DEF_GOALS.water,
-    manual:true
+    kcal:v.kcal, prot:v.prot, carb:v.carb, fat:v.fat,
+    water: r0($('#gWater').value)||DEF_GOALS.water,
+    split: v.split, manual:true
   };
-  loadSettings(); toast('Ziele gespeichert');
+  loadSettings(); renderDay(); toast('Ziele gespeichert');
 };
-$('#key').onchange   = ()=>{ store.key   = $('#key').value.trim(); };
+$('#key').onchange   = ()=>{ store.key = $('#key').value.trim(); localStorage.removeItem(K.models); };
 $('#model').onchange = ()=>{ store.model = $('#model').value; };
+$('#loadModels').onclick = async ()=>{
+  const btn = $('#loadModels');
+  btn.disabled = true;
+  $('#modelHint').textContent = 'Frage deinen Key nach verfügbaren Modellen…';
+  const list = await fetchModels();
+  btn.disabled = false;
+  if(!list){ $('#modelHint').textContent = 'Liste nicht ladbar — ist der Key richtig eingetragen?'; return; }
+  if(!list.some(m => m.id===store.model)){
+    store.model = pickBest(list);
+    toast('Auf '+store.model+' umgestellt');
+  }
+  renderModelSelect();
+  $('#modelHint').textContent = `${list.length} Modelle für deinen Key verfügbar.`;
+};
 $('#redoOnb').onclick = ()=>startOnb(0);
 $('#wipe').onclick = ()=>{
   if(confirm('Wirklich alle Mahlzeiten, Wasser- und Gewichtsdaten löschen? Das lässt sich nicht rückgängig machen.')){
@@ -1214,6 +1478,7 @@ function startOnb(step){
 function endOnb(){
   store.onbDone = true;
   $('#onb').classList.add('hidden');
+  weightDraft = null;              // Startwert aus dem frischen Profil neu ableiten
   renderDay(); renderStreak(); show('heute');
 }
 
@@ -1305,34 +1570,32 @@ function renderOnb(){
   }
 
   if(onbStep===3){
-    const c = calcGoals(onbData);
+    const split = onbData.split || DEF_SPLIT;
+    const c = calcGoals(onbData, split);
     b.innerHTML = `
       <h1>Dein Tagesziel</h1>
-      <p class="lead">Grundumsatz ca. ${c.bmr} kcal, Gesamtumsatz ca. ${c.tdee} kcal. Alles hier kannst du überschreiben.</p>
+      <p class="lead">Grundumsatz ca. ${c.bmr} kcal, Gesamtumsatz ca. ${c.tdee} kcal. Die Makros ergeben sich prozentual aus den Kalorien — beides kannst du hier ändern.</p>
       <div class="card pad">
-        <div class="row">
-          <div><label for="onbKcal">kcal</label><input type="number" id="onbKcal" inputmode="numeric" value="${c.kcal}"></div>
-          <div><label for="onbProt">Protein g</label><input type="number" id="onbProt" inputmode="numeric" value="${c.prot}"></div>
-        </div>
-        <div class="row" style="margin-top:12px">
-          <div><label for="onbCarb">Kohlenh. g</label><input type="number" id="onbCarb" inputmode="numeric" value="${c.carb}"></div>
-          <div><label for="onbFat">Fett g</label><input type="number" id="onbFat" inputmode="numeric" value="${c.fat}"></div>
-        </div>
-        <div class="field" style="margin-top:12px">
+        ${splitEditorHtml('onb', c.kcal, split)}
+        <div class="field" style="margin-top:18px">
           <label for="onbWater">Wasserziel ml</label><input type="number" id="onbWater" inputmode="numeric" value="${c.water}">
         </div>
       </div>
       <div class="hint" style="margin-top:14px">Bei Erkrankungen, Schwangerschaft oder Essstörungen besprich Kalorienziele bitte mit einer Ärztin oder einem Arzt statt mit einer App.</div>
       <button class="btn" id="onbDone" style="margin-top:18px">Los geht's 🍲</button>
       <button class="btn-ghost" id="onbBack" style="width:100%;margin-top:10px">Zurück</button>`;
-    $('#onbBack').onclick = ()=>{ onbStep=2; renderOnb(); };
+    wireSplitEditor('onb');
+    const keep = ()=>{ onbData.split = splitEditorValues('onb').split; };
+    $('#onbBack').onclick = ()=>{ keep(); onbStep=2; renderOnb(); };
     $('#onbDone').onclick = ()=>{
-      store.profile = {...onbData};
-      const manual = r0($('#onbKcal').value)!==c.kcal;
+      const v = readSplitEditor('onb');
+      if(!v) return;
+      store.profile = {sex:onbData.sex, age:onbData.age, height:onbData.height,
+                       weight:onbData.weight, act:onbData.act, goal:onbData.goal};
       store.goals = {
-        kcal:r0($('#onbKcal').value)||c.kcal, prot:r0($('#onbProt').value)||c.prot,
-        carb:r0($('#onbCarb').value)||c.carb, fat:r0($('#onbFat').value)||c.fat,
-        water:r0($('#onbWater').value)||c.water, manual
+        kcal:v.kcal, prot:v.prot, carb:v.carb, fat:v.fat,
+        water:r0($('#onbWater').value)||c.water,
+        split:v.split, manual: v.kcal !== c.kcal
       };
       endOnb();
     };
