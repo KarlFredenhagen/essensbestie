@@ -46,8 +46,11 @@ header .wrap{display:flex;align-items:center;gap:10px}
 .spacer{flex:1}
 .streak{
   display:flex;align-items:center;gap:5px;background:var(--accent-soft);color:var(--accent);
-  padding:6px 12px;border-radius:999px;font-size:13.5px;font-weight:700
+  padding:6px 12px;border-radius:999px;font-size:13.5px;font-weight:700;white-space:nowrap
 }
+.streak.off{background:var(--card-2);color:var(--muted);font-weight:600}
+.chk{display:flex;align-items:center;gap:9px;margin-top:11px;font-size:13px;color:var(--muted);font-weight:600;cursor:pointer}
+.chk input{width:auto;flex:none;margin:0;padding:0;accent-color:var(--accent)}
 h2{font-size:12.5px;font-weight:650;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:22px 0 9px;display:flex;align-items:center;gap:8px}
 h2 .r{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600;font-size:12.5px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
@@ -455,6 +458,7 @@ nav button.on .ico{transform:scale(1.16) translateY(-1px)}
           <select id="model"></select>
           <button class="btn-ghost" id="loadModels" style="flex:0 0 auto;padding:12px 15px" title="Verfügbare Modelle laden">↻</button>
         </div>
+        <label class="chk"><input type="checkbox" id="allModels"> Auch Vorschau- und Spezialmodelle zeigen</label>
         <div class="hint" id="modelHint">Mit ↻ lädst du die Modelle, die dein Key wirklich freischaltet.</div>
       </div>
     </div>
@@ -561,7 +565,7 @@ const FACTORS = [[0.5,'½'],[0.75,'¾'],[1,'1×'],[1.5,'1½'],[2,'2×']];
 /* ============ Speicher ============ */
 const K = {key:'eb_key', model:'eb_model', goals:'eb_goals', entries:'eb_entries',
            days:'eb_days', profile:'eb_profile', mods:'eb_mods', prefs:'eb_prefs',
-           onb:'eb_onb', models:'eb_models'};
+           onb:'eb_onb', models:'eb_models', pinned:'eb_pinned'};
 
 function jget(k, def){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?def:v; }catch{ return def; } }
 function jset(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ toast('Speicher voll — alte Fotos werden knapp'); } }
@@ -569,6 +573,8 @@ function jset(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ to
 const store = {
   get key(){ return localStorage.getItem(K.key)||''; },  set key(v){ localStorage.setItem(K.key,v); },
   get model(){ return localStorage.getItem(K.model)||'gemini-2.5-flash'; }, set model(v){ localStorage.setItem(K.model,v); },
+  // Hat der Nutzer das Modell selbst gewaehlt? Dann nie ungefragt umschalten.
+  get pinned(){ return localStorage.getItem(K.pinned)==='1'; }, set pinned(v){ localStorage.setItem(K.pinned, v?'1':'0'); },
   get prefs(){ return localStorage.getItem(K.prefs)||''; }, set prefs(v){ localStorage.setItem(K.prefs,v); },
   get goals(){ return {...DEF_GOALS, ...jget(K.goals,{})}; }, set goals(v){ jset(K.goals,v); },
   get profile(){ return {...DEF_PROFILE, ...jget(K.profile,{})}; }, set profile(v){ jset(K.profile,v); },
@@ -712,12 +718,27 @@ const FALLBACK_MODELS = [
   {id:'gemini-2.5-flash-lite', label:'Gemini 2.5 Flash Lite'},
   {id:'gemini-2.5-pro',        label:'Gemini 2.5 Pro'}
 ];
-// Modelle, die zwar generateContent koennen, aber nichts fuer uns sind.
-const UNFIT = /embedding|aqa|imagen|veo|tts|audio|image-generation|robotics|learnlm/i;
+// Kann kein Bild lesen oder taugt nicht fuer strukturierte Antworten.
+const UNFIT = /embedding|aqa|imagen|veo|tts|audio|-image|-live|robotics|learnlm|gemma|nano/i;
+// Technisch nutzbar, aber nichts fuer die Standardauswahl: Vorschau, Experimente, Altlasten.
+const NOISY = /preview|-exp|experimental|thinking|-8b|gemini-1\.|tuned|-\d{3}$/i;
 
 const modelList = () => { const c = jget(K.models, null); return (c && c.length) ? c : FALLBACK_MODELS; };
-const pickBest = list => (list.find(m => /flash/.test(m.id) && !/lite/.test(m.id))
-                       || list.find(m => /flash/.test(m.id)) || list[0]).id;
+
+// Je hoeher, desto besser fuer uns: aktuelles Flash schlaegt altes, Flash schlaegt Pro
+// (gleiche Qualitaet fuer diesen Zweck, aber viel groesseres Freikontingent).
+function modelScore(id){
+  if(/^gemini-flash-latest$/.test(id)) return 1000;
+  const v = parseFloat((id.match(/gemini-(\d+\.\d+)/)||[])[1]) || 0;
+  const lite = /lite/.test(id), flash = /flash/.test(id);
+  return (flash && !lite ? 300 : flash ? 200 : /pro/.test(id) ? 100 : 0) + v*10;
+}
+// Kurze Auswahl fuers Dropdown, beste zuerst; faellt auf die volle Liste zurueck.
+const curated = list => {
+  const c = list.filter(m => !NOISY.test(m.id));
+  return (c.length ? c : list).slice().sort((a,b) => modelScore(b.id)-modelScore(a.id));
+};
+const pickBest = list => curated(list)[0].id;
 
 // Fragt beim Key nach, welche Modelle er wirklich freischaltet.
 async function fetchModels(quiet){
@@ -741,11 +762,19 @@ async function fetchModels(quiet){
 }
 
 function renderModelSelect(){
-  const list = modelList(), cur = store.model;
+  const all = modelList(), cur = store.model;
+  const showAll = $('#allModels').checked;
+  const list = showAll ? all : curated(all);
   let html = list.map(m => `<option value="${esc(m.id)}">${esc(m.label)}</option>`).join('');
-  if(!list.some(m => m.id===cur)) html += `<option value="${esc(cur)}">${esc(cur)} — gespeichert</option>`;
+  if(!list.some(m => m.id===cur)) html += `<option value="${esc(cur)}">${esc(cur)}</option>`;
   $('#model').innerHTML = html;
   $('#model').value = cur;
+
+  const hidden = all.length - curated(all).length;
+  $('#modelHint').innerHTML =
+    (/pro/i.test(cur) ? 'Pro ist genauer, hat aber ein deutlich kleineres Freikontingent. ' : '') +
+    (showAll || !hidden ? '' : `${hidden} Vorschau- und Spezialmodelle ausgeblendet. `) +
+    'Mit ↻ lädst du die Liste neu.';
 }
 
 async function gemini(parts, schema, temp, retried){
@@ -771,16 +800,19 @@ async function gemini(parts, schema, temp, retried){
     if(res.status===403) throw new Error('Zugriff verweigert — Key ungültig oder die Gemini API ist dafür nicht freigeschaltet.');
     if(res.status===429) throw new Error('Freikontingent gerade erschöpft. Kurz warten oder Flash Lite nehmen.');
     if(res.status===404){
-      // Modellname passt nicht zum Key: echte Liste holen und einmal automatisch umschalten.
+      const dead = store.model;
+      // Selbst gewaehltes Modell bleibt stehen — nur ein veralteter Standard wird repariert.
+      if(store.pinned)
+        throw new Error(`„${dead}" antwortet nicht (404). Wähl unter „Mehr" ein anderes Modell — Flash läuft am zuverlässigsten.`);
       const list = await fetchModels(true);
       const best = list && list.length ? pickBest(list) : null;
-      if(best && best!==store.model && !retried){
+      if(best && best!==dead && !retried){
         store.model = best;
         renderModelSelect();
-        toast('Auf '+best+' umgestellt');
+        toast('Standardmodell war veraltet, jetzt: '+best);
         return gemini(parts, schema, temp, true);
       }
-      throw new Error(`Modell „${store.model}" gibt es für deinen Key nicht. Lade unter „Mehr" die Modell-Liste (↻) und wähl eins aus.`);
+      throw new Error(`Modell „${dead}" gibt es für deinen Key nicht. Lade unter „Mehr" die Modell-Liste (↻) und wähl eins aus.`);
     }
     if(res.status>=500) throw new Error('Google-Server hat gerade Schluckauf. Nochmal probieren.');
     throw new Error(d || ('Fehler '+res.status));
@@ -1015,12 +1047,13 @@ let lastStreak = null;
 function renderStreak(){
   const el = $('#streakBadge');
   const n = streak();
-  const on = store.mods.streak && n > 0;
-  el.classList.toggle('hidden', !on);
-  if(on){
-    el.innerHTML = `🔥 ${n} ${n===1?'Tag':'Tage'}`;
-    if(lastStreak!=null && n>lastStreak) bump(el);
-  }
+  el.classList.toggle('hidden', !store.mods.streak);
+  el.classList.toggle('off', n===0);
+  el.title = n===0
+    ? 'Trag heute etwas ein, dann startet deine Serie.'
+    : `${n} Tage in Folge etwas eingetragen`;
+  el.textContent = n===0 ? '🔥 Serie starten' : `🔥 ${n} ${n===1?'Tag':'Tage'}`;
+  if(lastStreak!=null && n>lastStreak) bump(el);
   lastStreak = n;
 }
 
@@ -1385,9 +1418,8 @@ function loadSettings(){
   if(store.key.trim() && !jget(K.models, null)){
     fetchModels(true).then(list => {
       if(!list) return;
-      if(!list.some(m => m.id===store.model)) store.model = pickBest(list);
+      if(!store.pinned && !list.some(m => m.id===store.model)) store.model = pickBest(list);
       renderModelSelect();
-      $('#modelHint').textContent = `${list.length} Modelle für deinen Key verfügbar.`;
     });
   }
 
@@ -1441,8 +1473,13 @@ $('#saveGoals').onclick = ()=>{
   };
   loadSettings(); renderDay(); toast('Ziele gespeichert');
 };
-$('#key').onchange   = ()=>{ store.key = $('#key').value.trim(); localStorage.removeItem(K.models); };
-$('#model').onchange = ()=>{ store.model = $('#model').value; };
+$('#key').onchange = ()=>{ store.key = $('#key').value.trim(); localStorage.removeItem(K.models); };
+$('#model').onchange = ()=>{
+  store.model = $('#model').value;
+  store.pinned = true;            // ab jetzt ist das deine Wahl, nicht meine
+  renderModelSelect();
+};
+$('#allModels').onchange = renderModelSelect;
 $('#loadModels').onclick = async ()=>{
   const btn = $('#loadModels');
   btn.disabled = true;
@@ -1450,12 +1487,14 @@ $('#loadModels').onclick = async ()=>{
   const list = await fetchModels();
   btn.disabled = false;
   if(!list){ $('#modelHint').textContent = 'Liste nicht ladbar — ist der Key richtig eingetragen?'; return; }
+  // Nur umschalten, wenn das eingestellte Modell wirklich nicht mehr existiert.
   if(!list.some(m => m.id===store.model)){
     store.model = pickBest(list);
-    toast('Auf '+store.model+' umgestellt');
+    store.pinned = false;
+    toast(`Modell nicht mehr verfügbar — jetzt ${store.model}`);
   }
   renderModelSelect();
-  $('#modelHint').textContent = `${list.length} Modelle für deinen Key verfügbar.`;
+  toast(`${curated(list).length} von ${list.length} Modellen zur Auswahl`);
 };
 $('#redoOnb').onclick = ()=>startOnb(0);
 $('#wipe').onclick = ()=>{
