@@ -109,6 +109,15 @@ h2 svg{opacity:.8}
 .sw input:checked + .sw-track .sw-knob{transform:translateX(19px);background:#fff}
 .sw input:focus-visible + .sw-track{outline:2px solid var(--accent);outline-offset:2px}
 .sw-lbl{font-size:13px;font-weight:600;color:var(--muted);line-height:1.35}
+
+/* Module als Zeilen mit Schalter statt als Farbbloecke */
+.modrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid var(--line)}
+.modrow:first-child{border-top:none}
+.modrow .ic{color:var(--muted);flex:none;display:inline-flex}
+.modrow .tx{flex:1;min-width:0}
+.modrow .tx b{display:block;font-size:14.5px;font-weight:650}
+.modrow .tx small{color:var(--muted);font-size:12.5px}
+.modrow .sw{margin:0;flex:none}
 h2{font-size:12.5px;font-weight:650;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:22px 0 9px;display:flex;align-items:center;gap:8px}
 h2 .r{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600;font-size:12.5px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
@@ -194,6 +203,8 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 0
 .sp b{flex:1;min-width:0;font-size:13.5px;font-weight:600}
 .sp input{width:68px;flex:none;text-align:center;padding:10px 4px}
 .sp .pc{color:var(--muted);font-size:13.5px}
+.sp.lim input{width:88px}
+.sp .ic{display:inline-flex;color:var(--muted);flex:none}
 .sp .g{width:64px;flex:none;text-align:right;color:var(--muted);font-size:13.5px;font-variant-numeric:tabular-nums}
 .sumline{font-size:12.5px;font-weight:600;margin-top:12px;text-align:right}
 .sumline.good{color:var(--ok)}
@@ -273,6 +284,7 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 0
 .slot-head .em{font-size:17px}
 .slot-head b{font-size:14.5px;font-weight:650}
 .slot-head .kc{margin-left:auto;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.slot-head .kc.over{color:var(--err);font-weight:650}
 .slot-head .add{background:var(--card);border:1px solid var(--line);color:var(--accent);width:30px;height:30px;font-size:17px;font-weight:700;line-height:1;padding:0;flex:none}
 .entry{display:flex;gap:11px;align-items:center;padding:11px 12px;border-top:1px solid var(--line)}
 .entry:first-child{border-top:none}
@@ -678,6 +690,7 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
       <div class="field" style="margin-top:16px">
         <label>Wofür?</label>
         <div class="seg slots" id="recSlot"></div>
+        <div class="hint" id="recBudgetLine"></div>
       </div>
       <div class="field">
         <label for="prefs">Vorlieben & No-Gos</label>
@@ -776,10 +789,18 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
       <button class="btn" id="saveGoals" style="margin-top:16px">Ziele speichern</button>
     </div>
 
+    <h2><span data-ico="cutlery" data-ico-size="14"></span>Grenzen pro Mahlzeit <span class="r" id="limState"></span></h2>
+    <div class="card pad">
+      <div class="hint" style="margin:0 0 4px">Leer oder 0 heißt: keine Grenze. Rezeptvorschläge halten sich strikt daran, und in der Tagesansicht siehst du, wie voll eine Mahlzeit schon ist.</div>
+      <div id="limFields"></div>
+      <button class="btn-ghost" id="limSuggest" style="width:100%;margin-top:16px">Aus dem Tagesziel vorschlagen</button>
+      <button class="btn" id="limSave" style="margin-top:10px">Grenzen speichern</button>
+    </div>
+
     <h2><span data-ico="gear" data-ico-size="14"></span>Module</h2>
     <div class="card pad">
-      <div class="seg col" id="mods"></div>
-      <div class="hint">Schalte ab, was du nicht brauchst — es verschwindet dann aus der Tagesansicht.</div>
+      <div id="mods"></div>
+      <div class="hint" style="margin-top:12px">Schalte ab, was du nicht brauchst — es verschwindet dann aus der Tagesansicht.</div>
     </div>
 
     <h2><span data-ico="barcode" data-ico-size="14"></span>Eigene Produkte <span class="r" id="prodCount"></span></h2>
@@ -845,12 +866,15 @@ const MACROS = [
 const DEF_GOALS = {kcal:2000, prot:150, carb:250, fat:44, water:2500, split:DEF_SPLIT};
 const DEF_PROFILE = {sex:'m', age:25, height:178, weight:75, act:'1.375', goal:'hold'};
 const DEF_MODS = {water:true, weight:true, streak:true, recipes:true};
+// Grobe Tagesaufteilung fuer den Vorschlag-Knopf bei den Mahlzeit-Grenzen.
+const LIMIT_PCT = {fruehstueck:25, mittag:35, abend:30, snack:10};
 const FACTORS = [[0.5,'½'],[0.75,'¾'],[1,'1×'],[1.5,'1½'],[2,'2×']];
 
 /* ============ Speicher ============ */
 const K = {key:'eb_key', model:'eb_model', goals:'eb_goals', entries:'eb_entries',
            days:'eb_days', profile:'eb_profile', mods:'eb_mods', prefs:'eb_prefs',
-           onb:'eb_onb', models:'eb_models', pinned:'eb_pinned', products:'eb_products'};
+           onb:'eb_onb', models:'eb_models', pinned:'eb_pinned', products:'eb_products',
+           limits:'eb_limits'};
 
 function jget(k, def){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?def:v; }catch{ return def; } }
 function jset(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ toast('Speicher voll — alte Fotos werden knapp'); } }
@@ -867,6 +891,7 @@ const store = {
   get entries(){ return jget(K.entries,[]); }, set entries(v){ jset(K.entries,v); },
   get days(){ return jget(K.days,{}); }, set days(v){ jset(K.days,v); },
   get products(){ return jget(K.products,{}); }, set products(v){ jset(K.products,v); },
+  get limits(){ return jget(K.limits,{}); }, set limits(v){ jset(K.limits,v); },
   get onbDone(){ return localStorage.getItem(K.onb)==='1'; }, set onbDone(v){ localStorage.setItem(K.onb, v?'1':'0'); }
 };
 
@@ -907,7 +932,7 @@ const ICONS = {
   list:    '<path d="M8.4 6h12.2M8.4 12h12.2M8.4 18h12.2"/><path d="M3.6 6h.02M3.6 12h.02M3.6 18h.02"/>',
   gear:    '<path d="M3.4 6.6h8.2M17.4 6.6h3.2M3.4 12h2.2M11.6 12h9M3.4 17.4h8.2M17.4 17.4h3.2"/><circle cx="14.5" cy="6.6" r="2.4"/><circle cx="8.6" cy="12" r="2.4"/><circle cx="14.5" cy="17.4" r="2.4"/>',
   droplet: '<path d="M12 3.1s6.1 6.3 6.1 10.2a6.1 6.1 0 1 1-12.2 0C5.9 9.4 12 3.1 12 3.1Z"/>',
-  scale:   '<rect x="3.4" y="4.4" width="17.2" height="15.2" rx="3.2"/><path d="M8.2 10.4a5 5 0 0 1 7.6 0"/><path d="m12 13.4 2.1-2.9"/>',
+  scale:   '<rect x="3.4" y="4.4" width="17.2" height="15.2" rx="3.4"/><path d="M7.4 15.2a4.6 4.6 0 0 1 9.2 0"/><path d="m12 15.2 3.1-3.8"/>',
   chart:   '<path d="M3 20.4h18"/><path d="M6.4 20.4v-5.8M12 20.4V6.2M17.6 20.4v-8.6"/>',
   close:   '<path d="m6.4 6.4 11.2 11.2M17.6 6.4 6.4 17.6"/>',
   check:   '<path d="m5.2 12.6 4.6 4.6L18.8 7.4"/>',
@@ -936,7 +961,13 @@ function paintIcons(root){
 }
 
 /* ---- App-Gefuehl: kurzer Impuls beim Antippen ---- */
-const tap = () => { try{ navigator.vibrate && navigator.vibrate(8); }catch{} };
+// Chrome verweigert vibrate(), bevor der Nutzer die Seite einmal beruehrt hat.
+let userTapped = false;
+addEventListener('pointerdown', ()=>{ userTapped = true; }, {once:true, capture:true});
+const tap = () => {
+  if(!userTapped) return;
+  try{ navigator.vibrate && navigator.vibrate(8); }catch{}
+};
 
 /* ---- Eigenes Dropdown: das native <select> bleibt als Zustand erhalten ---- */
 function closeSelects(keep){
@@ -1450,10 +1481,33 @@ function renderResult(){
   $('#rNote').textContent = current.hinweis||'';
 }
 
+/* ============ Grenzen pro Mahlzeit ============ */
+// Was an einem Tag bereits auf eine Mahlzeit entfaellt.
+function slotKcal(date, slot){
+  return store.entries
+    .filter(e => e.date===date && (e.slot||'snack')===slot)
+    .reduce((a,e) => a + (e.kcal||0), 0);
+}
+// Wie viel dort heute noch reinpasst. Ohne Grenze: null.
+function slotRest(slot){
+  const lim = Number(store.limits[slot]) || 0;
+  return lim > 0 ? Math.max(0, lim - slotKcal(todayIso(), slot)) : null;
+}
+
 function addEntry(e){
   const list = store.entries;
   list.push({id: Date.now()+'-'+Math.random().toString(36).slice(2,7), ...e});
   store.entries = list;
+
+  // Freundlicher Hinweis, kein Verbot.
+  const lim = Number(store.limits[e.slot]) || 0;
+  if(lim > 0){
+    const nach = slotKcal(e.date, e.slot);
+    if(nach > lim){
+      const name = SLOTS.find(s => s.id===e.slot)?.name || 'Mahlzeit';
+      setTimeout(()=> toast(`${name} jetzt ${r0(nach-lim)} kcal über der Grenze`), 1400);
+    }
+  }
 }
 
 $('#save').onclick = ()=>{
@@ -1725,6 +1779,31 @@ $('#npSave').onclick = ()=>{
 };
 
 /* ---- Verwaltung in den Einstellungen ---- */
+function renderLimits(){
+  const l = store.limits;
+  $('#limFields').innerHTML = SLOTS.map(s => `
+    <div class="sp lim">
+      <span class="ic">${ico(s.icon, 16)}</span>
+      <b>${s.name}</b>
+      <input type="number" id="lim_${s.id}" inputmode="numeric" min="0" placeholder="frei"
+             value="${Number(l[s.id])>0 ? l[s.id] : ''}">
+      <span class="pc">kcal</span>
+    </div>`).join('');
+  const n = SLOTS.filter(s => Number(l[s.id]) > 0).length;
+  $('#limState').textContent = n ? `${n} von 4 gesetzt` : 'keine gesetzt';
+}
+$('#limSuggest').onclick = ()=>{
+  const kcal = store.goals.kcal;
+  SLOTS.forEach(s => $('#lim_'+s.id).value = r0(kcal*LIMIT_PCT[s.id]/100/10)*10);
+  tap(); toast('Vorschlag eingetragen — noch speichern');
+};
+$('#limSave').onclick = ()=>{
+  const l = {};
+  SLOTS.forEach(s => { const v = r0($('#lim_'+s.id).value); if(v > 0) l[s.id] = v; });
+  store.limits = l;
+  renderLimits(); renderDay(); toast('Grenzen gespeichert');
+};
+
 function renderProducts(){
   const all = store.products;
   const codes = Object.keys(all).sort((a,b) => (all[b].ts||0)-(all[a].ts||0));
@@ -1885,10 +1964,15 @@ function renderDay(){
         <button class="del" data-id="${e.id}" title="Löschen">${ico('close',16)}</button></div>`;
     }).join('') : `<div class="slot-empty">Noch nichts eingetragen.</div>`;
 
+    const lim = Number(store.limits[s.id]) || 0;
+    const label = lim
+      ? `${r0(kc)} / ${lim} kcal`
+      : (kc ? r0(kc)+' kcal' : '');
+
     return `<div class="slot">
       <div class="slot-head">
         <span class="em">${ico(s.icon, 17)}</span><b>${s.name}</b>
-        <span class="kc">${kc ? r0(kc)+' kcal' : ''}</span>
+        <span class="kc ${lim && kc > lim ? 'over' : ''}">${label}</span>
         <button class="add" data-slot="${s.id}" title="Hinzufügen">${ico('plus',17)}</button>
       </div>
       <div class="card">${body}</div>
@@ -1942,27 +2026,57 @@ function renderIdeas(){
   $('#recSlot').innerHTML = SLOTS.map(s =>
     `<button data-s="${s.id}" class="${s.id===recSlot?'on':''}"><span class="em">${ico(s.icon, 17)}</span>${s.name}</button>`).join('');
   $$('#recSlot button').forEach(b => b.onclick = ()=>{ recSlot=b.dataset.s; tap(); renderIdeas(); });
+
+  // Wenn die Mahlzeit eine eigene Grenze hat, gilt die engere der beiden.
+  const b = recipeBudget();
+  const name = SLOTS.find(s => s.id===recSlot)?.name || '';
+  $('#recBudgetLine').textContent = b.limit
+    ? (b.kcal > 0
+        ? `Für ${name} gilt deine Grenze von ${b.limit} kcal — davon sind noch ${b.kcal} kcal frei.`
+        : `Deine Grenze für ${name} (${b.limit} kcal) ist heute schon erreicht.`)
+    : `Ohne eigene Grenze rechne ich mit dem ganzen Restbudget des Tages.`;
 }
 
-let recipes = [];
+// Der engere von beiden Werten zaehlt: Rest des Tages oder Rest der Mahlzeit.
+function recipeBudget(){
+  const g = store.goals, t = totalsFor(todayIso());
+  const dayRest = Math.max(0, r0(g.kcal - t.kcal));
+  const limit = Number(store.limits[recSlot]) || 0;
+  const rest = slotRest(recSlot);
+  return {
+    limit,
+    kcal: limit ? Math.min(dayRest, rest) : dayRest,
+    dayRest
+  };
+}
+
+let recipes = [], recBudgetUsed = 0;
 $('#getRecipes').onclick = async ()=>{
   if(!store.key.trim()){ toast('Erst API-Key eintragen'); show('set'); return; }
   store.prefs = $('#prefs').value.trim();
 
   const g = store.goals, t = totalsFor(todayIso());
-  const rk = Math.max(150, r0(g.kcal-t.kcal));
-  const rp = Math.max(10,  r0(g.prot-t.prot));
   const slotName = SLOTS.find(s=>s.id===recSlot)?.name || 'Mahlzeit';
+  const b = recipeBudget();
+  if(b.limit && b.kcal <= 0){
+    setStatus('#recStatus','err',
+      `Deine Grenze für ${slotName} (${b.limit} kcal) ist heute erreicht. Wähl eine andere Mahlzeit oder pass die Grenze unter „Mehr" an.`);
+    return;
+  }
+  const rk = Math.max(80, b.kcal);
+  const rp = Math.max(10, r0(g.prot-t.prot));
 
   $('#getRecipes').disabled = true;
   $('#recipes').innerHTML = '';
   setStatus('#recStatus','load','Ideen werden gesucht…');
   try{
-    const prompt = `Schlage genau 3 proteinreiche Rezepte für ${slotName} vor, die in ein Restbudget von ${rk} kcal passen.
+    const prompt = `Schlage genau 3 proteinreiche Rezepte für ${slotName} vor, die in ein Budget von ${rk} kcal passen.
 
 Rahmen:
-- Jedes Rezept liegt zwischen ${Math.max(120, r0(rk*0.35))} und ${rk} kcal.
-- Ziel sind mindestens ${Math.max(20, r0(rp/2))} g Protein pro Rezept, gern mehr.
+- HARTE OBERGRENZE: ${rk} kcal pro Rezept. Kein Vorschlag darf darüber liegen, auch nicht knapp.${
+  b.limit ? `\n- Der Nutzer hat ${slotName} bewusst auf ${b.limit} kcal begrenzt. Halte dich strikt daran und schlage nichts vor, was sich nur durch eine Mini-Portion in die Grenze rechnen lässt — die Gerichte selbst müssen in diese Größenordnung passen.` : ''}
+- Jedes Rezept liegt zwischen ${Math.max(60, r0(rk*0.4))} und ${rk} kcal.
+- Ziel sind mindestens ${Math.min(Math.max(8, r0(rp/2)), r0(rk/12))} g Protein pro Rezept, gern mehr.
 - Noch offen heute: ${rp} g Protein, ${Math.max(0,r0(g.carb-t.carb))} g Kohlenhydrate, ${Math.max(0,r0(g.fat-t.fat))} g Fett.
 - Vorlieben und No-Gos des Nutzers: ${store.prefs || '(keine Angabe)'}
 
@@ -1980,6 +2094,7 @@ Antworte ausschließlich als JSON in genau dieser Form:
 
     const out = await gemini([{text:prompt}], REC_SCHEMA, 0.8);
     recipes = out.rezepte || [];
+    recBudgetUsed = rk;
     setStatus('#recStatus', null);
     renderRecipes();
   }catch(e){
@@ -1995,7 +2110,8 @@ function renderRecipes(){
     <div class="rec selectable">
       <div class="h">
         <div style="flex:1">
-          <b>${esc(r.titel)}</b>
+          <b>${esc(r.titel)}</b>${r0(r.kcal) > recBudgetUsed
+            ? ` <span class="tag niedrig">${r0(r.kcal)-recBudgetUsed} kcal drüber</span>` : ''}
           <div class="meta">${r0(r.kcal)} kcal · ${r0(r.protein_g)} g Protein · ${r0(r.kohlenhydrate_g)} g Kohlenh. · ${r0(r.fett_g)} g Fett${r.dauer_min?' · ca. '+r0(r.dauer_min)+' Min':''}</div>
         </div>
       </div>
@@ -2217,12 +2333,19 @@ function loadSettings(){
 
   const m = store.mods;
   $('#mods').innerHTML = Object.entries(MOD_INFO).map(([k,[i,t,d]])=>
-    `<button data-m="${k}" class="${m[k]?'on':''}">${ico(i,16)} ${t} ${m[k]?ico('check',15):''}<small>${d}</small></button>`).join('');
-  $$('#mods button').forEach(b => b.onclick = ()=>{
-    const mm = store.mods; mm[b.dataset.m] = !mm[b.dataset.m]; store.mods = mm;
-    tap(); loadSettings(); renderStreak();
+    `<div class="modrow">
+       <span class="ic">${ico(i,18)}</span>
+       <div class="tx"><b>${t}</b><small>${d}</small></div>
+       <label class="sw"><input type="checkbox" data-m="${k}" ${m[k]?'checked':''}>
+         <span class="sw-track"><span class="sw-knob"></span></span></label>
+     </div>`).join('');
+  $$('#mods input').forEach(b => b.onchange = ()=>{
+    const mm = store.mods; mm[b.dataset.m] = b.checked; store.mods = mm;
+    tap(); renderStreak(); renderDay();
+    $('#limState') && renderLimits();
   });
 
+  renderLimits();
   renderProducts();
   paintIcons();
   syncAllSelects();

@@ -52,6 +52,9 @@ aber nie deinen Schluessel.
   30 % Protein, 20 % Fett) mit Gramm-Anzeige daneben; Presets fuer Protein,
   Low Carb und Aufbau, oder frei einstellbar
 - Gewicht per Plus/Minus-Stepper in 100-g-Schritten, halten beschleunigt
+- Grenzen pro Mahlzeit (z.B. Snacks auf 150 kcal): Rezeptvorschlaege halten
+  sich strikt daran, die Tagesansicht zeigt "60 / 150 kcal" und faerbt rot,
+  sobald es drueber geht. Auf Knopfdruck aus dem Tagesziel vorgeschlagen
 - Optionale Module: Wasser, Gewichtstrend, Streak, Rezeptideen
 - Modell-Auswahl fragt den eigenen Key, welche Modelle er freischaltet;
   bei einem 404 schaltet die App automatisch auf ein verfuegbares um
