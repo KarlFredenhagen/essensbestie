@@ -63,6 +63,9 @@ aber nie deinen Schluessel.
   bei einem 404 schaltet die App automatisch auf ein verfuegbares um
 - Rezeptvorschlaege: drei proteinreiche Ideen, die ins Restbudget des Tages passen,
   auf Wunsch direkt als Mahlzeit eintragbar
+- Einkaufsliste: bei jedem Rezept Zutaten per Haekchen auswaehlen und mit einem
+  Tipp uebernehmen, dazu eigene Eintraege von Hand. Abgehakte Sachen bleiben
+  durchgestrichen stehen, bis man sie einzeln entfernt oder die Liste leert
 - Verlauf ueber 30 Tage, Durchschnitte, Export als JSON und CSV
 - Offline-faehig per Service Worker; ohne Netz laeuft alles ausser der Analyse
 

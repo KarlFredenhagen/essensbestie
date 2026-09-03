@@ -110,6 +110,36 @@ h2 svg{opacity:.8}
 .sw input:focus-visible + .sw-track{outline:2px solid var(--accent);outline-offset:2px}
 .sw-lbl{font-size:13px;font-weight:600;color:var(--muted);line-height:1.35}
 
+/* Custom-Haekchen statt System-Checkbox, gleiche Sprache wie der Schalter */
+.chk{display:flex;align-items:center;gap:11px;padding:7px 0;cursor:pointer}
+.chk input{position:absolute;opacity:0;width:0;height:0;margin:0}
+.chk-box{
+  position:relative;width:22px;height:22px;border-radius:7px;flex:none;
+  background:var(--card-2);border:1.5px solid var(--line);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .18s,border-color .18s
+}
+.chk-box svg{width:14px;height:14px;opacity:0;transform:scale(.5);
+  transition:opacity .16s,transform .16s cubic-bezier(.3,1.4,.5,1)}
+.chk input:checked + .chk-box{background:var(--accent);border-color:var(--accent)}
+.chk input:checked + .chk-box svg{opacity:1;transform:scale(1)}
+.chk input:focus-visible + .chk-box{outline:2px solid var(--accent);outline-offset:2px}
+.chk-lbl{font-size:14px;flex:1;min-width:0;transition:color .18s}
+
+/* Zutaten-Auswahl im Rezept: eigene Liste ohne Listenpunkte */
+.zlist{margin:10px 0 0}
+.zlist .chk{padding:5px 0}
+
+/* Einkaufsliste */
+.slist-row{display:flex;align-items:center;gap:4px;border-top:1px solid var(--line)}
+.slist-row:first-child{border-top:none}
+.slist-row .chk{flex:1;min-width:0}
+.slist-row .chk-lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slist-row input:checked ~ .chk-lbl{color:var(--muted);text-decoration:line-through}
+.slist-row .del{background:none;border:none;color:var(--muted);padding:9px}
+.slist-tag{font-size:11px;color:var(--muted);background:var(--card-2);border-radius:99px;
+  padding:2px 8px;flex:none;margin-left:2px}
+
 /* Module als Zeilen mit Schalter statt als Farbbloecke */
 .modrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid var(--line)}
 .modrow:first-child{border-top:none}
@@ -702,6 +732,22 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
     <div id="recipes"></div>
   </section>
 
+  <!-- ================= EINKAUFSLISTE ================= -->
+  <section id="v-liste" class="hidden">
+    <h2 style="margin-top:20px">Einkaufsliste <span class="r" id="shopState"></span></h2>
+    <div class="card pad">
+      <div class="row">
+        <input id="shopNew" placeholder="z.B. 500 g Haferflocken">
+        <button class="btn-ghost" id="shopAdd" style="flex:0 0 auto;padding:12px 15px" data-ico="plus" data-ico-size="18"></button>
+      </div>
+    </div>
+    <div class="card" id="shopList" style="margin-top:14px"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn-ghost" id="shopClearDone" style="flex:1">Erledigte entfernen</button>
+      <button class="btn-ghost" id="shopClearAll" style="flex:1;color:var(--err)">Liste leeren</button>
+    </div>
+  </section>
+
   <!-- ================= VERLAUF ================= -->
   <section id="v-verlauf" class="hidden">
     <h2 style="margin-top:20px">Letzte 30 Tage</h2>
@@ -824,6 +870,7 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
     <button data-v="heute" class="on"><span class="ico" data-ico="target" data-ico-size="21"></span>Heute</button>
     <button data-v="neu"><span class="ico" data-ico="plus" data-ico-size="21"></span>Neu</button>
     <button data-v="ideen"><span class="ico" data-ico="sparkle" data-ico-size="21"></span>Ideen</button>
+    <button data-v="liste"><span class="ico" data-ico="cart" data-ico-size="21"></span>Liste</button>
     <button data-v="verlauf"><span class="ico" data-ico="list" data-ico-size="21"></span>Verlauf</button>
     <button data-v="set"><span class="ico" data-ico="gear" data-ico-size="21"></span>Mehr</button>
   </div>
@@ -874,7 +921,7 @@ const FACTORS = [[0.5,'½'],[0.75,'¾'],[1,'1×'],[1.5,'1½'],[2,'2×']];
 const K = {key:'eb_key', model:'eb_model', goals:'eb_goals', entries:'eb_entries',
            days:'eb_days', profile:'eb_profile', mods:'eb_mods', prefs:'eb_prefs',
            onb:'eb_onb', models:'eb_models', pinned:'eb_pinned', products:'eb_products',
-           limits:'eb_limits'};
+           limits:'eb_limits', shopping:'eb_shopping'};
 
 function jget(k, def){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?def:v; }catch{ return def; } }
 function jset(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ toast('Speicher voll — alte Fotos werden knapp'); } }
@@ -892,6 +939,7 @@ const store = {
   get days(){ return jget(K.days,{}); }, set days(v){ jset(K.days,v); },
   get products(){ return jget(K.products,{}); }, set products(v){ jset(K.products,v); },
   get limits(){ return jget(K.limits,{}); }, set limits(v){ jset(K.limits,v); },
+  get shopping(){ return jget(K.shopping,[]); }, set shopping(v){ jset(K.shopping,v); },
   get onbDone(){ return localStorage.getItem(K.onb)==='1'; }, set onbDone(v){ localStorage.setItem(K.onb, v?'1':'0'); }
 };
 
@@ -942,7 +990,8 @@ const ICONS = {
   hand:    '<path d="M11 20.4c-3 0-5-2-5-5v-4.6a1.3 1.3 0 0 1 2.6 0V13"/><path d="M8.6 12V5.2a1.3 1.3 0 0 1 2.6 0V11M11.2 11V4.4a1.3 1.3 0 0 1 2.6 0V11M13.8 11.4V6.4a1.3 1.3 0 0 1 2.6 0v8c0 3.4-1.8 6-5.4 6"/>',
   edit:    '<path d="M12.6 4.6H5.4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.2"/><path d="M18 3.2a1.9 1.9 0 0 1 2.8 2.8L12.4 14.4l-3.6.8.8-3.6Z"/>',
   search:  '<circle cx="10.8" cy="10.8" r="7"/><path d="m20.4 20.4-4.6-4.6"/>',
-  warn:    '<path d="M12 3.6 21.4 20H2.6Z"/><path d="M12 9.6v4.6M12 17.4h.02"/>'
+  warn:    '<path d="M12 3.6 21.4 20H2.6Z"/><path d="M12 9.6v4.6M12 17.4h.02"/>',
+  cart:    '<path d="M2.8 3.4h2l2.7 12.9a2 2 0 0 0 2 1.6h8.3a2 2 0 0 0 2-1.6l1.5-7.7H6.2"/><circle cx="9.6" cy="20.4" r="1.5"/><circle cx="17.4" cy="20.4" r="1.5"/>'
 };
 function ico(name, size){
   const p = ICONS[name];
@@ -1335,7 +1384,7 @@ const REC_SCHEMA = {
 };
 
 /* ============ Views ============ */
-const VIEWS = ['heute','neu','ideen','verlauf','set'];
+const VIEWS = ['heute','neu','ideen','liste','verlauf','set'];
 function show(v){
   if(scanStream) stopScan();
   VIEWS.forEach(x => $('#v-'+x).classList.toggle('hidden', x!==v));
@@ -1343,6 +1392,7 @@ function show(v){
   window.scrollTo({top:0});
   if(v==='heute')   renderDay();
   if(v==='ideen')   renderIdeas();
+  if(v==='liste')   renderShopping();
   if(v==='verlauf') renderHistory();
   if(v==='set')     loadSettings();
   animIn($('#v-'+v));
@@ -2106,7 +2156,7 @@ Antworte ausschließlich als JSON in genau dieser Form:
 function renderRecipes(){
   if(!recipes.length){ $('#recipes').innerHTML=''; return; }
   $('#recipes').innerHTML = `<h2>Vorschläge</h2><div class="card pad">` + recipes.map((r,i)=>`
-    <div class="rec selectable">
+    <div class="rec selectable" data-rec-idx="${i}">
       <div class="h">
         <div style="flex:1">
           <b>${esc(r.titel)}</b>${r0(r.kcal) > recBudgetUsed
@@ -2117,7 +2167,13 @@ function renderRecipes(){
       ${r.warum?`<div class="why">${esc(r.warum)}</div>`:''}
       <details>
         <summary>Zutaten & Zubereitung</summary>
-        <ul>${(r.zutaten||[]).map(z=>`<li>${esc(z)}</li>`).join('')}</ul>
+        <div class="zlist">${(r.zutaten||[]).map((z,j)=>`
+          <label class="chk">
+            <input type="checkbox" data-ing="${j}">
+            <span class="chk-box">${ico('check',14)}</span>
+            <span class="chk-lbl">${esc(z)}</span>
+          </label>`).join('')}</div>
+        <button class="btn-ghost btn-sm" data-addshop="${i}" style="margin-top:6px;width:100%">${ico('cart',14)} Ausgewählte in Einkaufsliste</button>
         <ol>${(r.schritte||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
       </details>
       <button class="btn-ghost btn-sm" data-rec="${i}" style="margin-top:12px;width:100%">Als gegessen eintragen</button>
@@ -2134,7 +2190,73 @@ function renderRecipes(){
     toast('Eingetragen');
     show('heute');
   });
+
+  $$('#recipes [data-addshop]').forEach(b => b.onclick = ()=>{
+    const box = b.closest('.rec');
+    const r = recipes[Number(box.dataset.recIdx)];
+    const checked = [...box.querySelectorAll('input[data-ing]:checked')];
+    if(!checked.length){ toast('Nichts ausgewählt'); return; }
+    const all = store.shopping;
+    checked.forEach(cb => {
+      const z = (r.zutaten||[])[Number(cb.dataset.ing)];
+      if(z) all.push({id: Date.now()+'_'+Math.random().toString(36).slice(2,7), name:z, checked:false, from:r.titel});
+      cb.checked = false;
+    });
+    store.shopping = all;
+    tap();
+    toast(checked.length===1 ? 'Zur Einkaufsliste hinzugefügt' : `${checked.length} zur Einkaufsliste hinzugefügt`);
+  });
 }
+
+/* ============ Einkaufsliste ============ */
+function renderShopping(){
+  const items = store.shopping;
+  const open = items.filter(x=>!x.checked).length;
+  $('#shopState').textContent = items.length ? `${open} offen` : '';
+  $('#shopList').innerHTML = items.length
+    ? items.map(it => `
+      <div class="slist-row">
+        <label class="chk">
+          <input type="checkbox" data-sid="${it.id}" ${it.checked?'checked':''}>
+          <span class="chk-box">${ico('check',14)}</span>
+          <span class="chk-lbl">${esc(it.name)}</span>
+        </label>
+        ${it.from ? `<span class="slist-tag">${esc(it.from)}</span>` : ''}
+        <button class="del" data-del="${it.id}" title="Löschen">${ico('close',15)}</button>
+      </div>`).join('')
+    : `<div class="empty"><span class="ico">${ico('cart',30)}</span>Noch leer. Häkchen bei Rezeptzutaten setzen oder oben eintragen.</div>`;
+
+  $$('#shopList [data-sid]').forEach(cb => cb.onchange = ()=>{
+    const all = store.shopping;
+    const it = all.find(x=>x.id===cb.dataset.sid);
+    if(it){ it.checked = cb.checked; store.shopping = all; tap(); renderShopping(); }
+  });
+  $$('#shopList [data-del]').forEach(b => b.onclick = ()=>{
+    store.shopping = store.shopping.filter(x=>x.id!==b.dataset.del);
+    tap(); renderShopping();
+  });
+}
+function addShopItem(){
+  const v = $('#shopNew').value.trim();
+  if(!v) return;
+  const all = store.shopping;
+  all.push({id: Date.now()+'_'+Math.random().toString(36).slice(2,7), name:v, checked:false, from:null});
+  store.shopping = all;
+  $('#shopNew').value = '';
+  tap(); renderShopping();
+}
+$('#shopAdd').onclick = addShopItem;
+$('#shopNew').addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); addShopItem(); } });
+$('#shopClearDone').onclick = ()=>{
+  if(!store.shopping.some(x=>x.checked)) return;
+  store.shopping = store.shopping.filter(x=>!x.checked);
+  toast('Erledigte entfernt'); renderShopping();
+};
+$('#shopClearAll').onclick = ()=>{
+  if(!store.shopping.length) return;
+  store.shopping = [];
+  toast('Liste geleert'); renderShopping();
+};
 
 /* ============ Verlauf ============ */
 function renderHistory(){
