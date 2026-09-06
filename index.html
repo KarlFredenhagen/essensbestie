@@ -456,6 +456,7 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
   display:flex;flex-direction:column;gap:14px;align-items:center
 }
 #scanHint{color:#fff;font-size:14.5px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.7);text-align:center}
+#scanDebug{color:rgba(255,255,255,.6);font-size:11.5px;font-variant-numeric:tabular-nums;margin-top:-8px;text-align:center}
 .scan-foot .btn-ghost{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3);min-width:180px;text-align:center}
 /* Fokus-Ring: Rueckmeldung beim Antippen zum Nachfokussieren */
 .focus-ring{
@@ -891,6 +892,7 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
   <div class="focus-ring" id="focusRing"></div>
   <div class="scan-foot">
     <div id="scanHint">Barcode ins Fenster halten</div>
+    <div id="scanDebug"></div>
     <button class="btn-ghost" id="scanStop">Abbrechen</button>
   </div>
 </div>
@@ -1621,9 +1623,11 @@ async function startScan(){
     // hoch und beschneidet den Grossteil weg -> wirkt komplett unscharf, ganz
     // unabhaengig vom tatsaechlichen Fokus. Deshalb gleich im Seitenverhaeltnis
     // des Bildschirms anfragen, dann passt Kamerabild und Anzeige zusammen.
-    const ar = (window.innerHeight / window.innerWidth) || 16/9;
-    const wantW = 1080, wantH = Math.min(1920, Math.round(wantW * ar));
-    const baseVideo = {facingMode:{ideal:'environment'}, width:{ideal:wantW}, height:{ideal:wantH}, aspectRatio:{ideal:ar}};
+    const screenAr = (window.innerHeight / window.innerWidth) || 16/9;
+    const wantW = 1080, wantH = Math.min(1920, Math.round(wantW * screenAr));
+    // aspectRatio-Constraint ist Breite/Hoehe, nicht Hoehe/Breite — bei Hochformat
+    // also ein Wert unter 1 (z.B. 0,56), sonst fordert man versehentlich Querformat an.
+    const baseVideo = {facingMode:{ideal:'environment'}, width:{ideal:wantW}, height:{ideal:wantH}, aspectRatio:{ideal:wantW/wantH}};
     try{
       scanStream = await navigator.mediaDevices.getUserMedia({
         video:{...baseVideo, advanced:[{focusMode:'continuous'}]}
@@ -1640,6 +1644,9 @@ async function startScan(){
     await focusContinuous();
     $('#scanner').classList.remove('hidden');
     $('#scanHint').textContent = 'Barcode ins Fenster halten — bei Unschärfe kurz antippen';
+    const vt = scanStream.getVideoTracks()[0];
+    const s = vt && vt.getSettings ? vt.getSettings() : {};
+    $('#scanDebug').textContent = s.width ? `Kamera: ${s.width}×${s.height}${s.focusMode?' · Fokus: '+s.focusMode:''}` : '';
     scanTick();
   }catch(e){
     stopScan();
