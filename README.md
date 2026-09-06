@@ -72,7 +72,9 @@ aber nie deinen Schluessel.
 - Modell-Auswahl fragt den eigenen Key, welche Modelle er freischaltet;
   bei einem 404 schaltet die App automatisch auf ein verfuegbares um
 - Rezeptvorschlaege: drei proteinreiche Ideen, die ins Restbudget des Tages passen,
-  auf Wunsch direkt als Mahlzeit eintragbar
+  auf Wunsch direkt als Mahlzeit eintragbar. Harte Ausschluesse (z.B. "Eiklar")
+  als Chips anlegen statt nur Freitext - werden zusaetzlich clientseitig aus
+  den Vorschlaegen rausgefiltert, falls die KI sie trotzdem vorschlaegt
 - Einkaufsliste: bei jedem Rezept Zutaten per Haekchen auswaehlen und mit einem
   Tipp uebernehmen, dazu eigene Eintraege von Hand. Abgehakte Sachen bleiben
   durchgestrichen stehen, bis man sie einzeln entfernt oder die Liste leert

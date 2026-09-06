@@ -448,6 +448,12 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 .prod .c{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .prod button{background:none;border:none;color:var(--muted);padding:4px}
 
+/* Ausschluss-Chips (Rezeptfilter) */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chips .chip{display:flex;align-items:center;gap:5px;background:var(--card-2);color:var(--text);
+  border-radius:99px;padding:6px 6px 6px 12px;font-size:13px;font-weight:600}
+.chips .chip button{background:none;border:none;color:var(--muted);padding:2px;display:flex;flex:none}
+
 /* Favoriten */
 .fav-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
 .fav-row:first-child{border-top:none}
@@ -739,6 +745,15 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
         <label for="prefs">Vorlieben & No-Gos</label>
         <input id="prefs" placeholder="z.B. vegetarisch, keine Pilze, schnell, wenig Abwasch">
       </div>
+      <div class="field">
+        <label for="recExclude">Ausschlüsse (harte No-Gos)</label>
+        <div class="row">
+          <input id="recExclude" placeholder="z.B. Eiklar, Rosinen" autocomplete="off">
+          <button class="btn-ghost" id="recExcludeAdd" style="flex:0 0 auto;padding:12px 16px" data-ico="plus" data-ico-size="17"></button>
+        </div>
+        <div id="recExcludeList"></div>
+        <div class="hint">Diese Zutaten werden aus den Vorschlägen zuverlässig herausgefiltert — auch wenn die KI mal danebenliegt.</div>
+      </div>
       <button class="btn" id="getRecipes" style="margin-top:14px">Proteinreiche Ideen holen</button>
       <div id="recStatus"></div>
     </div>
@@ -936,7 +951,8 @@ const FACTORS = [[0.5,'½'],[0.75,'¾'],[1,'1×'],[1.5,'1½'],[2,'2×']];
 const K = {key:'eb_key', model:'eb_model', goals:'eb_goals', entries:'eb_entries',
            days:'eb_days', profile:'eb_profile', mods:'eb_mods', prefs:'eb_prefs',
            onb:'eb_onb', models:'eb_models', pinned:'eb_pinned', products:'eb_products',
-           limits:'eb_limits', shopping:'eb_shopping', favorites:'eb_favorites', fasting:'eb_fasting'};
+           limits:'eb_limits', shopping:'eb_shopping', favorites:'eb_favorites', fasting:'eb_fasting',
+           excludes:'eb_rec_excludes'};
 
 function jget(k, def){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?def:v; }catch{ return def; } }
 function jset(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ toast('Speicher voll — alte Fotos werden knapp'); } }
@@ -947,6 +963,7 @@ const store = {
   // Hat der Nutzer das Modell selbst gewaehlt? Dann nie ungefragt umschalten.
   get pinned(){ return localStorage.getItem(K.pinned)==='1'; }, set pinned(v){ localStorage.setItem(K.pinned, v?'1':'0'); },
   get prefs(){ return localStorage.getItem(K.prefs)||''; }, set prefs(v){ localStorage.setItem(K.prefs,v); },
+  get excludes(){ return jget(K.excludes,[]); }, set excludes(v){ jset(K.excludes,v); },
   get goals(){ return {...DEF_GOALS, ...jget(K.goals,{})}; }, set goals(v){ jset(K.goals,v); },
   get profile(){ return {...DEF_PROFILE, ...jget(K.profile,{})}; }, set profile(v){ jset(K.profile,v); },
   get mods(){ return {...DEF_MODS, ...jget(K.mods,{})}; }, set mods(v){ jset(K.mods,v); },
@@ -2234,6 +2251,7 @@ function renderIdeas(){
   $('#restCarb').textContent = r0(Math.max(0, g.carb-t.carb))+' g';
   $('#restFat').textContent  = r0(Math.max(0, g.fat -t.fat ))+' g';
   $('#prefs').value = store.prefs;
+  renderExcludes();
   $('#recSlot').innerHTML = SLOTS.map(s =>
     `<button data-s="${s.id}" class="${s.id===recSlot?'on':''}"><span class="em">${ico(s.icon, 17)}</span>${s.name}</button>`).join('');
   $$('#recSlot button').forEach(b => b.onclick = ()=>{ recSlot=b.dataset.s; tap(); renderIdeas(); });
@@ -2247,6 +2265,30 @@ function renderIdeas(){
         : `Deine Grenze für ${name} (${b.limit} kcal) ist heute schon voll. Ich zeige trotzdem kleine Ideen bis ca. ${b.soft} kcal.`)
     : `Ohne eigene Grenze zählt das Restbudget des Tages: ${b.dayRest} kcal frei, gesucht wird bis ca. ${b.soft} kcal.`;
 }
+
+// Harte Ausschluesse als Chips statt nur Freitext — die KI haelt sich nicht
+// immer daran, deshalb wird zusaetzlich jedes Rezept clientseitig geprueft
+// (siehe getRecipes) und bei Treffer aussortiert.
+function renderExcludes(){
+  const ex = store.excludes;
+  $('#recExcludeList').innerHTML = ex.length ? `<div class="chips">${ex.map((x,i) => `
+    <span class="chip">${esc(x)}<button data-i="${i}" title="Entfernen">${ico('close',12)}</button></span>`).join('')}</div>` : '';
+  $$('#recExcludeList button').forEach(b => b.onclick = ()=>{
+    const list = store.excludes; list.splice(Number(b.dataset.i), 1); store.excludes = list;
+    tap(); renderExcludes();
+  });
+}
+function addExclude(){
+  const v = $('#recExclude').value.trim();
+  if(!v) return;
+  const list = store.excludes;
+  if(!list.some(x => x.toLowerCase()===v.toLowerCase())) list.push(v);
+  store.excludes = list;
+  $('#recExclude').value = '';
+  tap(); renderExcludes();
+}
+$('#recExcludeAdd').onclick = addExclude;
+$('#recExclude').addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); addExclude(); } });
 
 // Grenzen sind Leitplanken, keine Mauern: unter REC_MIN lohnt kein Rezept,
 // und ein kleiner Puffer nach oben ist besser als ein Vorschlag aus Luft.
@@ -2264,10 +2306,11 @@ function recipeBudget(){
   return {limit, rest, dayRest, soft: Math.min(Math.max(REC_MIN, rest + REC_TOL), capMeal)};
 }
 
-let recipes = [], recBudgetUsed = 0;
+let recipes = [], recBudgetUsed = 0, recFilteredOut = 0;
 $('#getRecipes').onclick = async ()=>{
   if(!store.key.trim()){ toast('Erst API-Key eintragen'); show('set'); return; }
   store.prefs = $('#prefs').value.trim();
+  const excludes = store.excludes;
 
   const g = store.goals, t = totalsFor(todayIso());
   const slotName = SLOTS.find(s=>s.id===recSlot)?.name || 'Mahlzeit';
@@ -2281,7 +2324,7 @@ $('#getRecipes').onclick = async ()=>{
   setStatus('#recStatus','load','Ideen werden gesucht…');
   try{
     const prompt = `Schlage genau 3 proteinreiche Rezepte für ${slotName} vor.
-
+${excludes.length ? `\nABSOLUT TABU — diese duerfen in keinem Rezept vorkommen, auch nicht versteckt in Saucen, Fuellungen oder als Teilzutat: ${excludes.join(', ')}. Ein Rezept, das eine dieser Zutaten enthaelt, ist ungueltig — schlag dann etwas komplett anderes vor.\n` : ''}
 Budget:
 - Zielbereich ${lo} bis ${rk} kcal pro Rezept. ${rk} kcal ist die Obergrenze, geh nicht darüber.
 - Rechnerisch frei sind noch ${b.rest} kcal. Etwas darüber ist ausdrücklich in Ordnung — lieber ein sättigendes Gericht knapp drüber als eine Alibi-Portion.${
@@ -2303,9 +2346,22 @@ Antworte ausschließlich als JSON in genau dieser Form:
  "fett_g":0,"zutaten":["200 g ..."],"schritte":["..."],"warum":"..."}]}`;
 
     const out = await gemini([{text:prompt}], REC_SCHEMA, 0.8);
-    recipes = out.rezepte || [];
+    let out_rezepte = out.rezepte || [];
+    const before = out_rezepte.length;
+    if(excludes.length){
+      const terms = excludes.map(x => x.toLowerCase());
+      out_rezepte = out_rezepte.filter(r => {
+        const hay = (r.titel+' '+(r.zutaten||[]).join(' ')).toLowerCase();
+        return !terms.some(t => hay.includes(t));
+      });
+    }
+    recipes = out_rezepte;
+    recFilteredOut = before - out_rezepte.length;
     recBudgetUsed = rk;
     setStatus('#recStatus', null);
+    if(recFilteredOut > 0){
+      toast(`${recFilteredOut} Vorschlag${recFilteredOut>1?'e':''} wegen Ausschlüssen entfernt`);
+    }
     renderRecipes();
   }catch(e){
     setStatus('#recStatus','err', e.message);
@@ -2315,7 +2371,12 @@ Antworte ausschließlich als JSON in genau dieser Form:
 };
 
 function renderRecipes(){
-  if(!recipes.length){ $('#recipes').innerHTML=''; return; }
+  if(!recipes.length){
+    $('#recipes').innerHTML = recFilteredOut>0
+      ? `<div class="hint" style="margin:14px 0 0;text-align:center">Alle Vorschläge enthielten ausgeschlossene Zutaten — nochmal versuchen.</div>`
+      : '';
+    return;
+  }
   $('#recipes').innerHTML = `<h2>Vorschläge</h2><div class="card pad">` + recipes.map((r,i)=>`
     <div class="rec selectable" data-rec-idx="${i}">
       <div class="h">
