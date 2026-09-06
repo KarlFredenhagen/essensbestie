@@ -40,10 +40,11 @@ aber nie deinen Schluessel.
 - Portionsfaktor (1/2 bis 2x) vor dem Speichern
 - Barcode per Foto: ein scharfes Bild ueber die native Kamera-App aufnehmen
   (wie beim Essensfoto), die App liest den Code direkt aus dem Foto
-  (BarcodeDetector des Browsers, keine Bibliothek) - dadurch keine Fokus-,
-  Zoom- oder Linsen-Problem wie bei einer Live-Vorschau. Alternativ ein
-  Live-Scanner (Beta) mit Kamera-Wechsel-Knopf fuer Handys mit mehreren
-  Ruecklinsen. Nachschlagen bei Open Food Facts - der gemeinnuetzigen
+  (BarcodeDetector des Browsers, keine Bibliothek) - dadurch keine Fokus-
+  oder Zoom-Probleme wie bei einer Live-Vorschau. Alternativ ein
+  Live-Scanner (Beta) mit automatischem Nahfokus-Versuch (~10 cm) fuer
+  Kameras ohne Autofokus-Steuerung. Nachschlagen bei Open Food Facts - der
+  gemeinnuetzigen
   europaeischen Lebensmitteldatenbank, frei und ohne Konto. Menge per Stepper
   und Schnellwahl (Portion / 100 g / Packung)
 - Kennt Open Food Facts ein Produkt nicht, legt man es selbst an: Naehrwerte

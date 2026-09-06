@@ -169,6 +169,7 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 0
 .row{display:flex;gap:10px}
 .row>*{flex:1;min-width:0}
 .hint{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+.hint a{color:var(--accent);font-weight:600;text-decoration:none}
 .i{display:inline-block;vertical-align:-.19em;flex:none}
 .ico{display:inline-flex;align-items:center;justify-content:center}
 
@@ -249,8 +250,6 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 0
 }
 .shot.filled{border-style:solid;border-color:var(--line)}
 .shot img{width:100%;height:100%;object-fit:cover}
-.shot .ico{font-size:38px}
-.shot .lbl{font-size:14px;font-weight:600}
 
 /* Makros */
 .macro-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -458,9 +457,6 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 #scanHint{color:#fff;font-size:14.5px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.7);text-align:center}
 #scanDebug{color:rgba(255,255,255,.6);font-size:11.5px;font-variant-numeric:tabular-nums;margin-top:-8px;text-align:center}
 .scan-foot .btn-ghost{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3);min-width:180px;text-align:center}
-.scan-foot .btn-ghost.on{background:var(--accent);border-color:var(--accent)}
-.scan-focus{display:flex;align-items:center;gap:10px;width:min(84vw,340px);color:#fff;accent-color:var(--accent)}
-.scan-focus input{flex:1}
 /* Fokus-Ring: Rueckmeldung beim Antippen zum Nachfokussieren */
 .focus-ring{
   position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;
@@ -586,141 +582,133 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
     <div class="seg slots" id="slotPick"></div>
 
     <h2>Womit</h2>
-    <div class="seg" id="modePick">
-      <button data-m="foto" class="on"><span data-ico="camera" data-ico-size="16"></span> Foto</button>
-      <button data-m="barcode"><span data-ico="barcode" data-ico-size="16"></span> Barcode</button>
+    <input type="file" accept="image/*" capture="environment" id="fileCam" class="hidden">
+    <input type="file" accept="image/*" id="fileLib" class="hidden">
+    <input type="file" accept="image/*" capture="environment" id="fileBarcode" class="hidden">
+
+    <button class="btn" id="btnFotoEssen"><span class="ico" data-ico="camera" data-ico-size="18"></span> Foto vom Essen</button>
+    <div class="hint" style="margin-top:6px;text-align:center">
+      <a href="#" id="galleryLink">aus Galerie wählen</a> · <a href="#" id="textOnlyLink">nur Text eingeben</a>
     </div>
 
-    <!-- ---------- Barcode ---------- -->
-    <div id="modeBarcode" class="hidden">
-      <h2>Produkt suchen</h2>
-      <input type="file" accept="image/*" capture="environment" id="fileBarcode" class="hidden">
-      <button class="btn" id="btnBarcodePhoto"><span class="ico" data-ico="camera" data-ico-size="18"></span> Foto vom Barcode</button>
-      <div id="bcPhotoStatus"></div>
-      <button class="btn-ghost btn-sm" id="scanStart" style="width:100%;margin-top:10px"><span class="ico" data-ico="scan" data-ico-size="16"></span> Live-Scanner (Beta)</button>
-      <div class="hint" style="margin-top:6px">Live-Scanner erkennt automatisch, ganz ohne Foto bestätigen. Bei "Foto vom Barcode" fragt dein Handy selbst kurz nach — das kann die App nicht überspringen.</div>
-      <div class="field" style="margin-top:14px">
-        <label for="bcInput">oder Nummer eintippen</label>
-        <div class="row">
-          <input id="bcInput" inputmode="numeric" placeholder="4000417025005" autocomplete="off" spellcheck="false">
-          <button class="btn-ghost" id="bcLookup" style="flex:0 0 auto;padding:12px 16px"><span data-ico="search" data-ico-size="17"></span></button>
-        </div>
-        <div class="hint">Nährwerte von <b>Open Food Facts</b> — einer gemeinnützigen, in Frankreich betriebenen Lebensmitteldatenbank. Frei nutzbar, kein Konto nötig.</div>
-      </div>
-      <div id="bcStatus"></div>
+    <button class="btn" id="btnBarcodePhoto" style="margin-top:16px"><span class="ico" data-ico="barcode" data-ico-size="18"></span> Foto vom Barcode</button>
+    <div id="bcPhotoStatus"></div>
+    <button class="btn-ghost btn-sm" id="scanStart" style="width:100%;margin-top:10px"><span class="ico" data-ico="scan" data-ico-size="16"></span> Live-Scanner (Beta)</button>
+    <div class="hint" style="margin-top:6px">Live-Scanner erkennt automatisch, ganz ohne Foto bestätigen. Bei "Foto vom Barcode" fragt dein Handy selbst kurz nach — das kann die App nicht überspringen.</div>
 
-      <!-- Treffer -->
-      <div id="bcResult" class="hidden">
-        <h2>Gefunden</h2>
+    <!-- ---------- Essen: Details, erst nach Foto oder "nur Text" ---------- -->
+    <div id="foodPanel" class="hidden">
+      <div class="shot filled hidden" id="shot" style="margin-top:16px">
+        <img id="shotImg" alt="">
+        <button class="btn-ghost hidden" id="btnClear" style="position:absolute;top:8px;right:8px;padding:8px"><span class="ico" data-ico="close"></span></button>
+      </div>
+      <div class="field" style="margin-top:16px">
+        <label for="note">Notiz — optional, hilft aber sehr</label>
+        <textarea id="note" placeholder="z.B. große Schüssel, mit Reis und Hähnchen, dazu ein Esslöffel Olivenöl"></textarea>
+        <div class="hint">Mengen, Zubereitung und Verstecktes wie Öl, Sauce oder Zucker machen die Schätzung deutlich genauer. Ohne Foto reicht auch nur der Text.</div>
+      </div>
+
+      <button class="btn" id="analyze" style="margin-top:14px">Nährwerte berechnen</button>
+      <div id="status"></div>
+
+      <div id="result" class="hidden">
+        <h2>Ergebnis</h2>
         <div class="card pad">
           <div style="display:flex;align-items:flex-start;gap:10px">
             <div style="flex:1;min-width:0">
-              <div id="bcName" style="font-size:17px;font-weight:700;letter-spacing:-.02em"></div>
-              <div id="bcBrand" class="hint" style="margin-top:2px"></div>
+              <div id="rName" style="font-size:18px;font-weight:700;letter-spacing:-.02em"></div>
+              <div id="rWeight" class="hint" style="margin-top:2px"></div>
             </div>
-            <span id="bcSrc" class="tag"></span>
+            <span id="rConf" class="tag"></span>
           </div>
-
-          <label style="margin-top:16px">Wie viel davon?</label>
-          <div class="stepper">
-            <button class="step" id="bcMinus">−</button>
-            <div class="val"><b id="bcAmount">100</b><small>g</small></div>
-            <button class="step" id="bcPlus">+</button>
+          <div style="margin:14px 0 6px">
+            <label>Portion anpassen</label>
+            <div class="seg" id="portion"></div>
           </div>
-          <div class="seg sm" id="bcQuick" style="margin-top:10px"></div>
-
-          <div class="macro-grid" style="margin-top:14px">
-            <div class="macro kc"><div class="v" id="bcKcal">–</div><div class="k">kcal</div></div>
-            <div class="macro p"><div class="v" id="bcProt">–</div><div class="k">Protein</div></div>
-            <div class="macro c"><div class="v" id="bcCarb">–</div><div class="k">Kohlenh.</div></div>
-            <div class="macro f"><div class="v" id="bcFat">–</div><div class="k">Fett</div></div>
+          <div class="macro-grid" style="margin-top:12px">
+            <div class="macro kc"><div class="v" id="mKcal">–</div><div class="k">kcal</div></div>
+            <div class="macro p"><div class="v" id="mProt">–</div><div class="k">Protein</div></div>
+            <div class="macro c"><div class="v" id="mCarb">–</div><div class="k">Kohlenh.</div></div>
+            <div class="macro f"><div class="v" id="mFat">–</div><div class="k">Fett</div></div>
           </div>
-          <div id="bcPer100" class="hint" style="margin-top:10px"></div>
-          <button class="btn" id="bcAdd" style="margin-top:16px">Hinzufügen</button>
-          <button class="btn-ghost" id="bcEdit" style="width:100%;margin-top:10px"><span data-ico="edit" data-ico-size="16"></span> Werte korrigieren</button>
-        </div>
-      </div>
-
-      <!-- Selbst anlegen -->
-      <div id="bcNew" class="hidden">
-        <h2>Selbst anlegen</h2>
-        <div class="card pad">
-          <div class="hint" id="bcNewHint" style="margin:0 0 14px"></div>
-          <div class="field">
-            <label for="npName">Name</label>
-            <input id="npName" placeholder="z.B. Haferflocken kernig" autocomplete="off">
-          </div>
-          <div class="field">
-            <label for="npBrand">Marke (optional)</label>
-            <input id="npBrand" placeholder="z.B. Kölln" autocomplete="off">
-          </div>
-          <label style="margin-top:16px">Nährwerte pro 100 g</label>
-          <div class="row">
-            <div><label for="npKcal">kcal</label><input type="number" id="npKcal" inputmode="decimal"></div>
-            <div><label for="npProt">Protein g</label><input type="number" id="npProt" inputmode="decimal"></div>
-          </div>
-          <div class="row" style="margin-top:12px">
-            <div><label for="npCarb">Kohlenh. g</label><input type="number" id="npCarb" inputmode="decimal"></div>
-            <div><label for="npFat">Fett g</label><input type="number" id="npFat" inputmode="decimal"></div>
-          </div>
-          <div class="hint">Steht alles auf der Nährwerttabelle der Packung. Einmal eintragen — beim nächsten Scan ist es sofort da.</div>
-          <button class="btn" id="npSave" style="margin-top:16px">Speichern</button>
-          <button class="btn-ghost" id="npCancel" style="width:100%;margin-top:10px">Abbrechen</button>
+          <div id="rExtra" class="hint" style="margin-top:10px"></div>
+          <div id="rIngs" class="selectable" style="margin-top:12px"></div>
+          <div id="rNote" class="hint" style="margin-top:12px"></div>
+          <button class="btn" id="save" style="margin-top:16px">Hinzufügen</button>
         </div>
       </div>
     </div>
 
-    <!-- ---------- Foto ---------- -->
-    <div id="modeFoto">
-    <h2>Foto</h2>
-    <button class="shot" id="shot">
-      <span class="ico" data-ico="camera" data-ico-size="34"></span>
-      <span class="lbl">Foto aufnehmen oder wählen</span>
-    </button>
-    <input type="file" accept="image/*" capture="environment" id="fileCam" class="hidden">
-    <input type="file" accept="image/*" id="fileLib" class="hidden">
-    <div class="row" style="margin-top:10px">
-      <button class="btn-ghost" id="btnCam"><span class="ico" data-ico="camera"></span> Kamera</button>
-      <button class="btn-ghost" id="btnLib"><span class="ico" data-ico="image"></span> Galerie</button>
-      <button class="btn-ghost hidden" id="btnClear"><span class="ico" data-ico="close"></span></button>
+    <!-- ---------- Barcode: manuelle Eingabe + Ergebnisse ---------- -->
+    <div class="field" style="margin-top:14px">
+      <label for="bcInput">oder Nummer eintippen</label>
+      <div class="row">
+        <input id="bcInput" inputmode="numeric" placeholder="4000417025005" autocomplete="off" spellcheck="false">
+        <button class="btn-ghost" id="bcLookup" style="flex:0 0 auto;padding:12px 16px"><span data-ico="search" data-ico-size="17"></span></button>
+      </div>
+      <div class="hint">Nährwerte von <b>Open Food Facts</b> — einer gemeinnützigen, in Frankreich betriebenen Lebensmitteldatenbank. Frei nutzbar, kein Konto nötig.</div>
     </div>
+    <div id="bcStatus"></div>
 
-    <div class="field" style="margin-top:16px">
-      <label for="note">Notiz — optional, hilft aber sehr</label>
-      <textarea id="note" placeholder="z.B. große Schüssel, mit Reis und Hähnchen, dazu ein Esslöffel Olivenöl"></textarea>
-      <div class="hint">Mengen, Zubereitung und Verstecktes wie Öl, Sauce oder Zucker machen die Schätzung deutlich genauer. Ohne Foto reicht auch nur der Text.</div>
-    </div>
-
-    <button class="btn" id="analyze" style="margin-top:14px">Nährwerte berechnen</button>
-    <div id="status"></div>
-
-    <div id="result" class="hidden">
-      <h2>Ergebnis</h2>
+    <!-- Treffer -->
+    <div id="bcResult" class="hidden">
+      <h2>Gefunden</h2>
       <div class="card pad">
         <div style="display:flex;align-items:flex-start;gap:10px">
           <div style="flex:1;min-width:0">
-            <div id="rName" style="font-size:18px;font-weight:700;letter-spacing:-.02em"></div>
-            <div id="rWeight" class="hint" style="margin-top:2px"></div>
+            <div id="bcName" style="font-size:17px;font-weight:700;letter-spacing:-.02em"></div>
+            <div id="bcBrand" class="hint" style="margin-top:2px"></div>
           </div>
-          <span id="rConf" class="tag"></span>
+          <span id="bcSrc" class="tag"></span>
         </div>
-        <div style="margin:14px 0 6px">
-          <label>Portion anpassen</label>
-          <div class="seg" id="portion"></div>
+
+        <label style="margin-top:16px">Wie viel davon?</label>
+        <div class="stepper">
+          <button class="step" id="bcMinus">−</button>
+          <div class="val"><b id="bcAmount">100</b><small>g</small></div>
+          <button class="step" id="bcPlus">+</button>
         </div>
-        <div class="macro-grid" style="margin-top:12px">
-          <div class="macro kc"><div class="v" id="mKcal">–</div><div class="k">kcal</div></div>
-          <div class="macro p"><div class="v" id="mProt">–</div><div class="k">Protein</div></div>
-          <div class="macro c"><div class="v" id="mCarb">–</div><div class="k">Kohlenh.</div></div>
-          <div class="macro f"><div class="v" id="mFat">–</div><div class="k">Fett</div></div>
+        <div class="seg sm" id="bcQuick" style="margin-top:10px"></div>
+
+        <div class="macro-grid" style="margin-top:14px">
+          <div class="macro kc"><div class="v" id="bcKcal">–</div><div class="k">kcal</div></div>
+          <div class="macro p"><div class="v" id="bcProt">–</div><div class="k">Protein</div></div>
+          <div class="macro c"><div class="v" id="bcCarb">–</div><div class="k">Kohlenh.</div></div>
+          <div class="macro f"><div class="v" id="bcFat">–</div><div class="k">Fett</div></div>
         </div>
-        <div id="rExtra" class="hint" style="margin-top:10px"></div>
-        <div id="rIngs" class="selectable" style="margin-top:12px"></div>
-        <div id="rNote" class="hint" style="margin-top:12px"></div>
-        <button class="btn" id="save" style="margin-top:16px">Hinzufügen</button>
+        <div id="bcPer100" class="hint" style="margin-top:10px"></div>
+        <button class="btn" id="bcAdd" style="margin-top:16px">Hinzufügen</button>
+        <button class="btn-ghost" id="bcEdit" style="width:100%;margin-top:10px"><span data-ico="edit" data-ico-size="16"></span> Werte korrigieren</button>
       </div>
     </div>
-    </div><!-- /modeFoto -->
+
+    <!-- Selbst anlegen -->
+    <div id="bcNew" class="hidden">
+      <h2>Selbst anlegen</h2>
+      <div class="card pad">
+        <div class="hint" id="bcNewHint" style="margin:0 0 14px"></div>
+        <div class="field">
+          <label for="npName">Name</label>
+          <input id="npName" placeholder="z.B. Haferflocken kernig" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="npBrand">Marke (optional)</label>
+          <input id="npBrand" placeholder="z.B. Kölln" autocomplete="off">
+        </div>
+        <label style="margin-top:16px">Nährwerte pro 100 g</label>
+        <div class="row">
+          <div><label for="npKcal">kcal</label><input type="number" id="npKcal" inputmode="decimal"></div>
+          <div><label for="npProt">Protein g</label><input type="number" id="npProt" inputmode="decimal"></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div><label for="npCarb">Kohlenh. g</label><input type="number" id="npCarb" inputmode="decimal"></div>
+          <div><label for="npFat">Fett g</label><input type="number" id="npFat" inputmode="decimal"></div>
+        </div>
+        <div class="hint">Steht alles auf der Nährwerttabelle der Packung. Einmal eintragen — beim nächsten Scan ist es sofort da.</div>
+        <button class="btn" id="npSave" style="margin-top:16px">Speichern</button>
+        <button class="btn-ghost" id="npCancel" style="width:100%;margin-top:10px">Abbrechen</button>
+      </div>
+    </div>
   </section>
 
   <!-- ================= IDEEN ================= -->
@@ -907,12 +895,6 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
   <div class="scan-foot">
     <div id="scanHint">Barcode ins Fenster halten</div>
     <div id="scanDebug"></div>
-    <div class="scan-focus hidden" id="scanFocusWrap">
-      <span class="ico" data-ico="target" data-ico-size="15"></span>
-      <input type="range" id="scanFocus">
-    </div>
-    <button class="btn-ghost hidden" id="scanTorch"><span class="ico" data-ico="bolt" data-ico-size="15"></span> Blitz</button>
-    <button class="btn-ghost hidden" id="scanSwitch"><span class="ico" data-ico="refresh" data-ico-size="15"></span> Andere Linse</button>
     <button class="btn-ghost" id="scanStop">Abbrechen</button>
   </div>
 </div>
@@ -952,7 +934,7 @@ const FACTORS = [[0.5,'½'],[0.75,'¾'],[1,'1×'],[1.5,'1½'],[2,'2×']];
 const K = {key:'eb_key', model:'eb_model', goals:'eb_goals', entries:'eb_entries',
            days:'eb_days', profile:'eb_profile', mods:'eb_mods', prefs:'eb_prefs',
            onb:'eb_onb', models:'eb_models', pinned:'eb_pinned', products:'eb_products',
-           limits:'eb_limits', shopping:'eb_shopping', camDevice:'eb_cam_device'};
+           limits:'eb_limits', shopping:'eb_shopping'};
 
 function jget(k, def){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?def:v; }catch{ return def; } }
 function jset(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ toast('Speicher voll — alte Fotos werden knapp'); } }
@@ -971,7 +953,6 @@ const store = {
   get products(){ return jget(K.products,{}); }, set products(v){ jset(K.products,v); },
   get limits(){ return jget(K.limits,{}); }, set limits(v){ jset(K.limits,v); },
   get shopping(){ return jget(K.shopping,[]); }, set shopping(v){ jset(K.shopping,v); },
-  get camDevice(){ return localStorage.getItem(K.camDevice)||''; }, set camDevice(v){ localStorage.setItem(K.camDevice,v); },
   get onbDone(){ return localStorage.getItem(K.onb)==='1'; }, set onbDone(v){ localStorage.setItem(K.onb, v?'1':'0'); }
 };
 
@@ -1023,8 +1004,7 @@ const ICONS = {
   edit:    '<path d="M12.6 4.6H5.4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.2"/><path d="M18 3.2a1.9 1.9 0 0 1 2.8 2.8L12.4 14.4l-3.6.8.8-3.6Z"/>',
   search:  '<circle cx="10.8" cy="10.8" r="7"/><path d="m20.4 20.4-4.6-4.6"/>',
   warn:    '<path d="M12 3.6 21.4 20H2.6Z"/><path d="M12 9.6v4.6M12 17.4h.02"/>',
-  cart:    '<path d="M2.8 3.4h2l2.7 12.9a2 2 0 0 0 2 1.6h8.3a2 2 0 0 0 2-1.6l1.5-7.7H6.2"/><circle cx="9.6" cy="20.4" r="1.5"/><circle cx="17.4" cy="20.4" r="1.5"/>',
-  bolt:    '<path d="M12.8 2.6 4.4 13.8h5.6l-1.8 7.6 9.4-12.2h-6Z"/>'
+  cart:    '<path d="M2.8 3.4h2l2.7 12.9a2 2 0 0 0 2 1.6h8.3a2 2 0 0 0 2-1.6l1.5-7.7H6.2"/><circle cx="9.6" cy="20.4" r="1.5"/><circle cx="17.4" cy="20.4" r="1.5"/>'
 };
 function ico(name, size){
   const p = ICONS[name];
@@ -1452,27 +1432,35 @@ function renderSlotPick(){
   $$('#slotPick button').forEach(b => b.onclick = ()=>{ pickedSlot=b.dataset.s; tap(); renderSlotPick(); });
 }
 
+// Der Essen-Bereich (Foto/Notiz/Ergebnis) ist zunaechst eingeklappt und
+// erscheint erst, wenn tatsaechlich ein Foto gemacht oder "nur Text" gewaehlt wurde.
+function openFoodPanel(){
+  if(!$('#foodPanel').classList.contains('hidden')) return;
+  $('#foodPanel').classList.remove('hidden');
+  animIn($('#foodPanel'));
+}
 async function pickFile(file){
   if(!file) return;
   try{
     const raw = await readFile(file);
     photoFull  = await resize(raw, 1024, 0.85);
     photoThumb = await resize(raw, 190, 0.65);
-    const s=$('#shot'); s.innerHTML=''; s.classList.add('filled');
-    const img=new Image(); img.src=photoFull; s.appendChild(img);
+    $('#shotImg').src = photoFull;
+    $('#shot').classList.remove('hidden');
     $('#btnClear').classList.remove('hidden');
+    openFoodPanel();
   }catch(e){ toast(e.message); }
 }
 function clearPhoto(){
   photoFull=photoThumb=null;
-  const s=$('#shot'); s.classList.remove('filled');
-  s.innerHTML='<span class="ico">'+ico('camera',34)+'</span><span class="lbl">Foto aufnehmen oder wählen</span>';
+  $('#shotImg').src = '';
+  $('#shot').classList.add('hidden');
   $('#btnClear').classList.add('hidden');
   $('#fileCam').value=''; $('#fileLib').value='';
 }
-$('#btnCam').onclick = ()=>$('#fileCam').click();
-$('#btnLib').onclick = ()=>$('#fileLib').click();
-$('#shot').onclick   = ()=>$('#fileCam').click();
+$('#btnFotoEssen').onclick = ()=>$('#fileCam').click();
+$('#galleryLink').onclick = e => { e.preventDefault(); $('#fileLib').click(); };
+$('#textOnlyLink').onclick = e => { e.preventDefault(); openFoodPanel(); $('#note').focus(); };
 $('#btnClear').onclick = clearPhoto;
 $('#fileCam').onchange = e => pickFile(e.target.files[0]);
 $('#fileLib').onchange = e => pickFile(e.target.files[0]);
@@ -1618,20 +1606,9 @@ const OFF = 'https://world.openfoodfacts.org/api/v2/product/';
 let bcProduct = null;    // {code, name, brand, per100, serving, paket, source}
 let bcGrams = 100;
 
-$$('#modePick button').forEach(b => b.onclick = ()=>{
-  const m = b.dataset.m;
-  $$('#modePick button').forEach(x => x.classList.toggle('on', x===b));
-  $('#modeFoto').classList.toggle('hidden', m!=='foto');
-  $('#modeBarcode').classList.toggle('hidden', m!=='barcode');
-  tap();
-});
-
 /* ---- Kamera-Scan ---- */
 let scanStream = null, scanTimer = null, detector = null;
-let camList = [], camIndex = -1;
 let imageCapture = null, useTakePhoto = false;
-let hasTorch = false, torchOn = false;
-let focusRange = null;
 
 async function ensureDetector(){
   if(detector) return detector;
@@ -1675,19 +1652,8 @@ async function decodeBarcodePhoto(file){
   }
 }
 
-// Baut die Video-Constraints: bevorzugt eine gemerkte Linse (deviceId), sonst
-// facingMode "environment". Manche Handys mit mehreren Rueckkameras (Weitwinkel/
-// Normal/Tele) liefern darueber aber die falsche Linse -> "Andere Linse"-Knopf
-// zum Durchschalten, die Wahl wird danach gemerkt.
-function camConstraints(deviceId){
-  const base = deviceId
-    ? {deviceId:{exact:deviceId}}
-    : {facingMode:{ideal:'environment'}};
-  return {...base, width:{ideal:1920}, height:{ideal:1080}};
-}
-
-async function openCamStream(deviceId){
-  const baseVideo = camConstraints(deviceId);
+async function openCamStream(){
+  const baseVideo = {facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}};
   try{
     return await navigator.mediaDevices.getUserMedia({video:{...baseVideo, advanced:[{focusMode:'continuous'}]}});
   }catch(e){
@@ -1708,49 +1674,29 @@ async function attachCamStream(stream){
   await focusContinuous();
   const vt = scanStream.getVideoTracks()[0];
   const s = vt && vt.getSettings ? vt.getSettings() : {};
-
-  // Volle Diagnose statt nur der aktuellen Einstellung — damit sich ohne
-  // Raten sehen laesst, was dieses Geraet ueberhaupt an Kamera-Kontrolle
-  // zulaesst (manche Handys erlauben dem Browser gar keine Fokus-Steuerung).
   const caps = vt && vt.getCapabilities ? vt.getCapabilities() : {};
-  hasTorch = !!caps.torch;
-  torchOn = false;
-  $('#scanTorch').classList.toggle('hidden', !hasTorch);
-  $('#scanTorch').classList.remove('on');
 
-  // "manual" statt "continuous"/"single-shot": kein Autofokus moeglich, aber
-  // die Linsenposition laesst sich direkt per focusDistance setzen — dafuer
-  // ein Regler, den man beim Blick auf die Vorschau selbst scharfstellt.
+  // "manual" statt "continuous"/"single-shot": kein Autofokus ansteuerbar,
+  // aber die Linsenposition laesst sich per focusDistance direkt setzen.
+  // Chrome bildet das i.d.R. in Dioptrien ab (1/Meter) — 10 cm ~= 10 Dioptrien,
+  // eine sinnvolle Distanz zum Scannen. Auf den gemeldeten Bereich begrenzt.
   const fd = caps.focusDistance;
-  focusRange = (fd && typeof fd.min==='number' && typeof fd.max==='number' && fd.max>fd.min) ? fd : null;
-  $('#scanFocusWrap').classList.toggle('hidden', !focusRange);
-  if(focusRange){
-    const el = $('#scanFocus');
-    el.min = focusRange.min; el.max = focusRange.max; el.step = focusRange.step || ((focusRange.max-focusRange.min)/100);
-    el.value = focusRange.min + (focusRange.max-focusRange.min)*0.65;
-    try{ await vt.applyConstraints({advanced:[{focusMode:'manual', focusDistance:Number(el.value)}]}); }catch{}
+  if(fd && typeof fd.min==='number' && typeof fd.max==='number' && fd.max>fd.min){
+    const target = Math.min(fd.max, Math.max(fd.min, 10));
+    try{ await vt.applyConstraints({advanced:[{focusMode:'manual', focusDistance:target}]}); }catch{}
   }
 
   // Die Live-Vorschau nutzt die "Video"-Kamera-Pipeline, die auf vielen
   // Handys keinen richtigen Autofokus macht (auf stabile Bewegtbilder statt
   // Schaerfe optimiert). ImageCapture.takePhoto() nutzt stattdessen die
   // "Foto"-Pipeline (dieselbe, die auch "Foto vom Barcode" nutzt) und darf
-  // dafuer vor jeder Aufnahme neu scharfstellen — aber nur noetig, wenn es
-  // keinen manuellen Regler gibt, sonst reicht das schnelle Live-Bild.
+  // dafuer vor jeder Aufnahme neu scharfstellen. Langsamer, aber schaerfer.
   imageCapture = ('ImageCapture' in window && vt) ? new window.ImageCapture(vt) : null;
-  useTakePhoto = !!imageCapture && !focusRange;
+  useTakePhoto = !!imageCapture;
 
   $('#scanDebug').textContent = s.width
-    ? `${s.width}×${s.height}${useTakePhoto?' · Foto-Modus':''}${focusRange?' · manueller Fokus':''} · Fokusmodi: ${caps.focusMode && caps.focusMode.length ? caps.focusMode.join(', ') : 'keine'}${hasTorch?' · Blitz verfügbar':''}`
+    ? `${s.width}×${s.height}${useTakePhoto?' · Foto-Modus':''} · Fokusmodi: ${caps.focusMode && caps.focusMode.length ? caps.focusMode.join(', ') : 'keine'}`
     : '';
-
-  // Erst nach erteilter Erlaubnis liefert enumerateDevices brauchbare Labels.
-  try{
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    camList = devices.filter(d => d.kind==='videoinput');
-    camIndex = Math.max(0, camList.findIndex(d => d.deviceId === s.deviceId));
-  }catch{ camList = []; camIndex = -1; }
-  $('#scanSwitch').classList.toggle('hidden', camList.length < 2);
 }
 
 async function startScan(){
@@ -1761,71 +1707,18 @@ async function startScan(){
   }
   try{
     await ensureDetector();
-
-    let stream;
-    try{
-      stream = await openCamStream(store.camDevice || undefined);
-    }catch(e){
-      // Gemerkte Linse evtl. nicht mehr vorhanden (anderes Geraet/Browser) — neu versuchen.
-      if(store.camDevice){ store.camDevice = ''; stream = await openCamStream(); }
-      else throw e;
-    }
+    const stream = await openCamStream();
     await attachCamStream(stream);
     $('#scanner').classList.remove('hidden');
-    $('#scanHint').textContent = focusRange
-      ? 'Barcode ins Fenster halten — mit dem Regler unten scharfstellen'
-      : useTakePhoto
-        ? 'Barcode ins Fenster halten — die App knipst alle ~1s ein scharfes Foto'
-        : 'Barcode ins Fenster halten — bei Unschärfe kurz antippen';
+    $('#scanHint').textContent = useTakePhoto
+      ? 'Barcode ins Fenster halten — die App knipst alle ~1s ein scharfes Foto'
+      : 'Barcode ins Fenster halten — bei Unschärfe kurz antippen';
     scanTick();
   }catch(e){
     stopScan();
     toast(e && e.name==='NotAllowedError' ? 'Kamerazugriff abgelehnt' : 'Kamera nicht verfügbar');
   }
 }
-
-async function switchCam(){
-  if(camList.length < 2) return;
-  tap();
-  camIndex = (camIndex + 1) % camList.length;
-  const dev = camList[camIndex];
-  try{
-    const stream = await openCamStream(dev.deviceId);
-    await attachCamStream(stream);
-    store.camDevice = dev.deviceId;
-    toast(`Linse ${camIndex+1}/${camList.length}`);
-  }catch{
-    toast('Diese Linse geht nicht — nächste?');
-  }
-}
-$('#scanSwitch').onclick = switchCam;
-
-// Manueller Fokus-Regler: bei "manual"-Fokusmodus laesst sich kein Autofokus
-// ansteuern, aber die Linsenposition direkt per focusDistance setzen. Der
-// Nutzer stellt anhand der Vorschau selbst scharf, wie bei einer Handkamera.
-$('#scanFocus').oninput = async ()=>{
-  const track = scanStream && scanStream.getVideoTracks()[0];
-  if(!track) return;
-  try{ await track.applyConstraints({advanced:[{focusMode:'manual', focusDistance:Number($('#scanFocus').value)}]}); }catch{}
-};
-
-// Blitz an/aus: hilft manchen Kameras beim Scharfstellen, wenn die
-// Autofokus-Steuerung selbst nicht ansprechbar ist, aber die Kamera bei mehr
-// Licht von sich aus besser fokussiert (haeufigste Ursache fuer Fokus-
-// Probleme aus naher Distanz ist zu wenig Licht am Objekt).
-$('#scanTorch').onclick = async ()=>{
-  if(!hasTorch) return;
-  const track = scanStream && scanStream.getVideoTracks()[0];
-  if(!track) return;
-  try{
-    torchOn = !torchOn;
-    await track.applyConstraints({advanced:[{torch:torchOn}]});
-    $('#scanTorch').classList.toggle('on', torchOn);
-    tap();
-  }catch{
-    toast('Blitz lässt sich hier nicht steuern');
-  }
-};
 
 function scanTick(){
   scanTimer = setTimeout(async ()=>{
