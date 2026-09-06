@@ -893,6 +893,7 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
   <div class="scan-foot">
     <div id="scanHint">Barcode ins Fenster halten</div>
     <div id="scanDebug"></div>
+    <button class="btn-ghost hidden" id="scanSwitch"><span class="ico" data-ico="refresh" data-ico-size="15"></span> Andere Linse</button>
     <button class="btn-ghost" id="scanStop">Abbrechen</button>
   </div>
 </div>
@@ -932,7 +933,7 @@ const FACTORS = [[0.5,'½'],[0.75,'¾'],[1,'1×'],[1.5,'1½'],[2,'2×']];
 const K = {key:'eb_key', model:'eb_model', goals:'eb_goals', entries:'eb_entries',
            days:'eb_days', profile:'eb_profile', mods:'eb_mods', prefs:'eb_prefs',
            onb:'eb_onb', models:'eb_models', pinned:'eb_pinned', products:'eb_products',
-           limits:'eb_limits', shopping:'eb_shopping'};
+           limits:'eb_limits', shopping:'eb_shopping', camDevice:'eb_cam_device'};
 
 function jget(k, def){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?def:v; }catch{ return def; } }
 function jset(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ toast('Speicher voll — alte Fotos werden knapp'); } }
@@ -951,6 +952,7 @@ const store = {
   get products(){ return jget(K.products,{}); }, set products(v){ jset(K.products,v); },
   get limits(){ return jget(K.limits,{}); }, set limits(v){ jset(K.limits,v); },
   get shopping(){ return jget(K.shopping,[]); }, set shopping(v){ jset(K.shopping,v); },
+  get camDevice(){ return localStorage.getItem(K.camDevice)||''; }, set camDevice(v){ localStorage.setItem(K.camDevice,v); },
   get onbDone(){ return localStorage.getItem(K.onb)==='1'; }, set onbDone(v){ localStorage.setItem(K.onb, v?'1':'0'); }
 };
 
@@ -1606,6 +1608,51 @@ $$('#modePick button').forEach(b => b.onclick = ()=>{
 
 /* ---- Kamera-Scan ---- */
 let scanStream = null, scanTimer = null, detector = null;
+let camList = [], camIndex = -1;
+
+// Baut die Video-Constraints: bevorzugt eine gemerkte Linse (deviceId), sonst
+// facingMode "environment". Manche Handys mit mehreren Rueckkameras (Weitwinkel/
+// Normal/Tele) liefern darueber aber die falsche Linse -> "Andere Linse"-Knopf
+// zum Durchschalten, die Wahl wird danach gemerkt.
+function camConstraints(deviceId){
+  const base = deviceId
+    ? {deviceId:{exact:deviceId}}
+    : {facingMode:{ideal:'environment'}};
+  return {...base, width:{ideal:1920}, height:{ideal:1080}};
+}
+
+async function openCamStream(deviceId){
+  const baseVideo = camConstraints(deviceId);
+  try{
+    return await navigator.mediaDevices.getUserMedia({video:{...baseVideo, advanced:[{focusMode:'continuous'}]}});
+  }catch(e){
+    if(e && e.name==='OverconstrainedError'){
+      // Manche Browser lehnen unbekannte advanced-Constraints hart ab statt sie zu ignorieren.
+      return await navigator.mediaDevices.getUserMedia({video:baseVideo});
+    }
+    throw e;
+  }
+}
+
+async function attachCamStream(stream){
+  if(scanStream) scanStream.getTracks().forEach(t => t.stop());
+  scanStream = stream;
+  const v = $('#scanVid');
+  v.srcObject = scanStream;
+  await v.play();
+  await focusContinuous();
+  const vt = scanStream.getVideoTracks()[0];
+  const s = vt && vt.getSettings ? vt.getSettings() : {};
+  $('#scanDebug').textContent = s.width ? `Kamera: ${s.width}×${s.height}${s.focusMode?' · Fokus: '+s.focusMode:''}` : '';
+
+  // Erst nach erteilter Erlaubnis liefert enumerateDevices brauchbare Labels.
+  try{
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    camList = devices.filter(d => d.kind==='videoinput');
+    camIndex = Math.max(0, camList.findIndex(d => d.deviceId === s.deviceId));
+  }catch{ camList = []; camIndex = -1; }
+  $('#scanSwitch').classList.toggle('hidden', camList.length < 2);
+}
 
 async function startScan(){
   if(!('BarcodeDetector' in window)){
@@ -1618,38 +1665,39 @@ async function startScan(){
     const want = formats.filter(f => /ean|upc|code_128|code_39|itf/.test(f));
     detector = new window.BarcodeDetector({formats: want.length ? want : formats});
 
-    // Ein erzwungenes Hochformat-Seitenverhaeltnis (per aspectRatio-Constraint)
-    // hat manche Kameras dazu gebracht, digital in die Bildmitte reinzuzoomen
-    // statt sauber optisch zuzuschneiden -> schlechte Qualitaet. Deshalb die
-    // Kamera einfach ihr natives Bild liefern lassen (nur Aufloesung als
-    // Wunsch) und die Anzeige (object-fit:contain) daran anpassen statt
-    // umgekehrt der Kamera ein unnatuerliches Format aufzuzwingen.
-    const baseVideo = {facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}};
+    let stream;
     try{
-      scanStream = await navigator.mediaDevices.getUserMedia({
-        video:{...baseVideo, advanced:[{focusMode:'continuous'}]}
-      });
+      stream = await openCamStream(store.camDevice || undefined);
     }catch(e){
-      if(e && e.name==='OverconstrainedError'){
-        // Manche Browser lehnen unbekannte advanced-Constraints hart ab statt sie zu ignorieren.
-        scanStream = await navigator.mediaDevices.getUserMedia({video:baseVideo});
-      } else throw e;
+      // Gemerkte Linse evtl. nicht mehr vorhanden (anderes Geraet/Browser) — neu versuchen.
+      if(store.camDevice){ store.camDevice = ''; stream = await openCamStream(); }
+      else throw e;
     }
-    const v = $('#scanVid');
-    v.srcObject = scanStream;
-    await v.play();
-    await focusContinuous();
+    await attachCamStream(stream);
     $('#scanner').classList.remove('hidden');
     $('#scanHint').textContent = 'Barcode ins Fenster halten — bei Unschärfe kurz antippen';
-    const vt = scanStream.getVideoTracks()[0];
-    const s = vt && vt.getSettings ? vt.getSettings() : {};
-    $('#scanDebug').textContent = s.width ? `Kamera: ${s.width}×${s.height}${s.focusMode?' · Fokus: '+s.focusMode:''}` : '';
     scanTick();
   }catch(e){
     stopScan();
     toast(e && e.name==='NotAllowedError' ? 'Kamerazugriff abgelehnt' : 'Kamera nicht verfügbar');
   }
 }
+
+async function switchCam(){
+  if(camList.length < 2) return;
+  tap();
+  camIndex = (camIndex + 1) % camList.length;
+  const dev = camList[camIndex];
+  try{
+    const stream = await openCamStream(dev.deviceId);
+    await attachCamStream(stream);
+    store.camDevice = dev.deviceId;
+    toast(`Linse ${camIndex+1}/${camList.length}`);
+  }catch{
+    toast('Diese Linse geht nicht — nächste?');
+  }
+}
+$('#scanSwitch').onclick = switchCam;
 
 function scanTick(){
   scanTimer = setTimeout(async ()=>{
