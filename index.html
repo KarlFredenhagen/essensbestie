@@ -1615,17 +1615,23 @@ async function startScan(){
     const formats = await window.BarcodeDetector.getSupportedFormats();
     const want = formats.filter(f => /ean|upc|code_128|code_39|itf/.test(f));
     detector = new window.BarcodeDetector({formats: want.length ? want : formats});
+
+    // Ohne passendes Seitenverhaeltnis liefert die Kamera oft ein breites 16:9-Bild.
+    // object-fit:cover zieht das auf ein hohes Handydisplay dann um ein Vielfaches
+    // hoch und beschneidet den Grossteil weg -> wirkt komplett unscharf, ganz
+    // unabhaengig vom tatsaechlichen Fokus. Deshalb gleich im Seitenverhaeltnis
+    // des Bildschirms anfragen, dann passt Kamerabild und Anzeige zusammen.
+    const ar = (window.innerHeight / window.innerWidth) || 16/9;
+    const wantW = 1080, wantH = Math.min(1920, Math.round(wantW * ar));
+    const baseVideo = {facingMode:{ideal:'environment'}, width:{ideal:wantW}, height:{ideal:wantH}, aspectRatio:{ideal:ar}};
     try{
       scanStream = await navigator.mediaDevices.getUserMedia({
-        video:{facingMode:{ideal:'environment'}, width:{ideal:1280},
-               advanced:[{focusMode:'continuous'}]}
+        video:{...baseVideo, advanced:[{focusMode:'continuous'}]}
       });
     }catch(e){
       if(e && e.name==='OverconstrainedError'){
         // Manche Browser lehnen unbekannte advanced-Constraints hart ab statt sie zu ignorieren.
-        scanStream = await navigator.mediaDevices.getUserMedia({
-          video:{facingMode:{ideal:'environment'}, width:{ideal:1280}}
-        });
+        scanStream = await navigator.mediaDevices.getUserMedia({video:baseVideo});
       } else throw e;
     }
     const v = $('#scanVid');
