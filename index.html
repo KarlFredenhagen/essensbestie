@@ -872,6 +872,13 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
     <div class="hint" style="margin:14px 0 8px;text-align:center">
       Alle Nährwerte sind Schätzungen eines KI-Modells — gut für den Alltag, aber kein Ersatz für eine Küchenwaage oder ärztlichen Rat.
     </div>
+
+    <button class="btn-ghost" id="forceUpdate" style="width:100%;margin-top:18px">
+      <span class="ico" data-ico="refresh" data-ico-size="15"></span> Neue Version laden
+    </button>
+    <div class="hint" style="margin:8px 0 0;text-align:center">
+      Leert den App-Cache und lädt frisch vom Server — deine Daten bleiben erhalten.
+    </div>
   </section>
 
 </main>
@@ -2698,6 +2705,23 @@ $('#wipe').onclick = ()=>{
     store.entries=[]; store.days={};
     renderDay(); renderStreak(); toast('Alles gelöscht');
   }
+};
+// Fuer's Testen neuer Versionen: Service-Worker-Registrierung und Cache-Storage
+// leeren (nicht localStorage!) und frisch laden, damit Aenderungen sofort
+// ankommen statt an altem Cache haengenzubleiben.
+$('#forceUpdate').onclick = async ()=>{
+  tap();
+  try{
+    if('serviceWorker' in navigator){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+    if('caches' in window){
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  }catch{}
+  location.reload();
 };
 
 /* ============ Onboarding ============ */
