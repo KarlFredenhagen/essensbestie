@@ -457,6 +457,14 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 }
 #scanHint{color:#fff;font-size:14.5px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.7);text-align:center}
 .scan-foot .btn-ghost{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3);min-width:180px;text-align:center}
+/* Fokus-Ring: Rueckmeldung beim Antippen zum Nachfokussieren */
+.focus-ring{
+  position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;
+  border:2px solid #fff;border-radius:50%;pointer-events:none;opacity:0;
+  box-shadow:0 0 0 1px rgba(0,0,0,.35)
+}
+.focus-ring.go{animation:focusPulse .55s ease-out}
+@keyframes focusPulse{0%{opacity:1;transform:scale(1.35)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1)}}
 
 /* Mengen-Schnellwahl: kompakt bleiben und dem Hauptknopf nicht die Schau stehlen */
 #bcQuick{justify-content:flex-start}
@@ -880,6 +888,7 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 <div id="scanner" class="hidden">
   <video id="scanVid" playsinline muted autoplay></video>
   <div class="scan-mask"><div class="scan-window"><div class="scan-line"></div></div></div>
+  <div class="focus-ring" id="focusRing"></div>
   <div class="scan-foot">
     <div id="scanHint">Barcode ins Fenster halten</div>
     <button class="btn-ghost" id="scanStop">Abbrechen</button>
@@ -1606,14 +1615,25 @@ async function startScan(){
     const formats = await window.BarcodeDetector.getSupportedFormats();
     const want = formats.filter(f => /ean|upc|code_128|code_39|itf/.test(f));
     detector = new window.BarcodeDetector({formats: want.length ? want : formats});
-    scanStream = await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:'environment'}, width:{ideal:1280}}
-    });
+    try{
+      scanStream = await navigator.mediaDevices.getUserMedia({
+        video:{facingMode:{ideal:'environment'}, width:{ideal:1280},
+               advanced:[{focusMode:'continuous'}]}
+      });
+    }catch(e){
+      if(e && e.name==='OverconstrainedError'){
+        // Manche Browser lehnen unbekannte advanced-Constraints hart ab statt sie zu ignorieren.
+        scanStream = await navigator.mediaDevices.getUserMedia({
+          video:{facingMode:{ideal:'environment'}, width:{ideal:1280}}
+        });
+      } else throw e;
+    }
     const v = $('#scanVid');
     v.srcObject = scanStream;
     await v.play();
+    await focusContinuous();
     $('#scanner').classList.remove('hidden');
-    $('#scanHint').textContent = 'Barcode ins Fenster halten';
+    $('#scanHint').textContent = 'Barcode ins Fenster halten — bei Unschärfe kurz antippen';
     scanTick();
   }catch(e){
     stopScan();
@@ -1648,6 +1668,49 @@ function stopScan(){
 $('#scanStart').onclick = startScan;
 $('#scanStop').onclick = stopScan;
 addEventListener('keydown', e => { if(e.key==='Escape' && scanStream) stopScan(); });
+
+// Manche Kameras starten ohne Dauerfokus (unscharf bis zum ersten Antippen).
+async function focusContinuous(){
+  try{
+    const track = scanStream && scanStream.getVideoTracks()[0];
+    if(!track || !track.getCapabilities) return;
+    const caps = track.getCapabilities();
+    if(caps.focusMode && caps.focusMode.includes('continuous')){
+      await track.applyConstraints({advanced:[{focusMode:'continuous'}]});
+    }
+  }catch{}
+}
+// Antippen fokussiert gezielt auf die angetippte Stelle (falls das Geraet das kann)
+// und gibt in jedem Fall einen sichtbaren Ring als Rueckmeldung.
+async function tapFocus(e){
+  const v = $('#scanVid');
+  const rect = v.getBoundingClientRect();
+  showFocusRing(e.clientX, e.clientY);
+  const track = scanStream && scanStream.getVideoTracks()[0];
+  if(!track || !track.getCapabilities) return;
+  try{
+    const caps = track.getCapabilities();
+    const adv = {};
+    if(caps.pointsOfInterest){
+      const x = Math.min(1, Math.max(0, (e.clientX-rect.left)/rect.width));
+      const y = Math.min(1, Math.max(0, (e.clientY-rect.top)/rect.height));
+      adv.pointsOfInterest = [{x, y}];
+    }
+    if(caps.focusMode && caps.focusMode.includes('single-shot')) adv.focusMode = 'single-shot';
+    else if(caps.focusMode && caps.focusMode.includes('continuous')) adv.focusMode = 'continuous';
+    if(Object.keys(adv).length) await track.applyConstraints({advanced:[adv]});
+  }catch{}
+}
+function showFocusRing(x, y){
+  const r = $('#focusRing');
+  if(!r) return;
+  r.style.left = x+'px'; r.style.top = y+'px';
+  r.classList.remove('go'); void r.offsetWidth; r.classList.add('go');
+}
+$('#scanner').addEventListener('click', e => {
+  if(!scanStream || e.target.closest('button')) return;
+  tapFocus(e);
+});
 
 /* ---- Nachschlagen ---- */
 $('#bcLookup').onclick = ()=> lookupBarcode($('#bcInput').value);

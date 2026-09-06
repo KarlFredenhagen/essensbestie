@@ -41,7 +41,9 @@ aber nie deinen Schluessel.
 - Barcode-Scanner ueber die Kamera (BarcodeDetector des Browsers, keine
   Bibliothek), Nachschlagen bei Open Food Facts - der gemeinnuetzigen
   europaeischen Lebensmitteldatenbank, frei und ohne Konto. Menge per Stepper
-  und Schnellwahl (Portion / 100 g / Packung)
+  und Schnellwahl (Portion / 100 g / Packung). Dauerfokus wird beim Start
+  angefordert, bei Unschaerfe kurz auf die Stelle im Sucher tippen zum
+  Nachfokussieren
 - Kennt Open Food Facts ein Produkt nicht, legt man es selbst an: Naehrwerte
   pro 100 g eintragen, danach liegt es lokal unter seinem Barcode und ist beim
   naechsten Scan sofort da, auch offline. Verwaltung unter "Mehr"
