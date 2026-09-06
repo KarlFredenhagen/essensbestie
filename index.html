@@ -2324,7 +2324,7 @@ $('#getRecipes').onclick = async ()=>{
   setStatus('#recStatus','load','Ideen werden gesucht…');
   try{
     const prompt = `Schlage genau 3 proteinreiche Rezepte für ${slotName} vor.
-${excludes.length ? `\nABSOLUT TABU — diese duerfen in keinem Rezept vorkommen, auch nicht versteckt in Saucen, Fuellungen oder als Teilzutat: ${excludes.join(', ')}. Ein Rezept, das eine dieser Zutaten enthaelt, ist ungueltig — schlag dann etwas komplett anderes vor.\n` : ''}
+${excludes.length ? `\nABSOLUT TABU — diese duerfen in keinem Rezept vorkommen, auch nicht versteckt in Saucen, Fuellungen oder als Teilzutat: ${excludes.join(', ')}. Ein Rezept, das eine dieser Zutaten enthaelt, ist ungueltig — schlag dann etwas komplett anderes vor. Das ist eine gezielte Ausnahme fuer genau diese Zutat, keine ganze Zutatenkategorie: verwandte, aber andere Zutaten bleiben ausdruecklich erlaubt, wenn sie nicht selbst in der Liste stehen (Beispiel: steht nur "Eiklar" auf der Liste, sind ganze Eier trotzdem erlaubt — schraenk also nicht mehr ein, als da steht).\n` : ''}
 Budget:
 - Zielbereich ${lo} bis ${rk} kcal pro Rezept. ${rk} kcal ist die Obergrenze, geh nicht darüber.
 - Rechnerisch frei sind noch ${b.rest} kcal. Etwas darüber ist ausdrücklich in Ordnung — lieber ein sättigendes Gericht knapp drüber als eine Alibi-Portion.${
