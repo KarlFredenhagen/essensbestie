@@ -41,9 +41,9 @@ aber nie deinen Schluessel.
 - Barcode per Foto: ein scharfes Bild ueber die native Kamera-App aufnehmen
   (wie beim Essensfoto), die App liest den Code direkt aus dem Foto
   (BarcodeDetector des Browsers, keine Bibliothek) - dadurch keine Fokus-
-  oder Zoom-Probleme wie bei einer Live-Vorschau. Alternativ ein
-  Live-Scanner (Beta) mit automatischem Nahfokus-Versuch (~10 cm) fuer
-  Kameras ohne Autofokus-Steuerung. Nachschlagen bei Open Food Facts - der
+  oder Zoom-Probleme wie bei einer Live-Vorschau (die haben wir ausprobiert
+  und wieder verworfen: viele Handys lassen den Browser gar nicht an die
+  Fokus-Steuerung der Kamera). Nachschlagen bei Open Food Facts - der
   gemeinnuetzigen
   europaeischen Lebensmitteldatenbank, frei und ohne Konto. Menge per Stepper
   und Schnellwahl (Portion / 100 g / Packung)
