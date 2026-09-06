@@ -38,12 +38,14 @@ aber nie deinen Schluessel.
 
 - Foto (Kamera oder Galerie) + Notiz, Analyse per Gemini mit strukturierter JSON-Antwort
 - Portionsfaktor (1/2 bis 2x) vor dem Speichern
-- Barcode-Scanner ueber die Kamera (BarcodeDetector des Browsers, keine
-  Bibliothek), Nachschlagen bei Open Food Facts - der gemeinnuetzigen
+- Barcode per Foto: ein scharfes Bild ueber die native Kamera-App aufnehmen
+  (wie beim Essensfoto), die App liest den Code direkt aus dem Foto
+  (BarcodeDetector des Browsers, keine Bibliothek) - dadurch keine Fokus-,
+  Zoom- oder Linsen-Problem wie bei einer Live-Vorschau. Alternativ ein
+  Live-Scanner (Beta) mit Kamera-Wechsel-Knopf fuer Handys mit mehreren
+  Ruecklinsen. Nachschlagen bei Open Food Facts - der gemeinnuetzigen
   europaeischen Lebensmitteldatenbank, frei und ohne Konto. Menge per Stepper
-  und Schnellwahl (Portion / 100 g / Packung). Dauerfokus wird beim Start
-  angefordert, bei Unschaerfe kurz auf die Stelle im Sucher tippen zum
-  Nachfokussieren
+  und Schnellwahl (Portion / 100 g / Packung)
 - Kennt Open Food Facts ein Produkt nicht, legt man es selbst an: Naehrwerte
   pro 100 g eintragen, danach liegt es lokal unter seinem Barcode und ist beim
   naechsten Scan sofort da, auch offline. Verwaltung unter "Mehr"

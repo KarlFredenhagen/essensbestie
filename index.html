@@ -591,7 +591,10 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
     <!-- ---------- Barcode ---------- -->
     <div id="modeBarcode" class="hidden">
       <h2>Produkt suchen</h2>
-      <button class="btn" id="scanStart"><span data-ico="scan" data-ico-size="19"></span> Barcode scannen</button>
+      <input type="file" accept="image/*" capture="environment" id="fileBarcode" class="hidden">
+      <button class="btn" id="btnBarcodePhoto"><span class="ico" data-ico="camera" data-ico-size="18"></span> Foto vom Barcode</button>
+      <div id="bcPhotoStatus"></div>
+      <button class="btn-ghost btn-sm" id="scanStart" style="width:100%;margin-top:10px"><span class="ico" data-ico="scan" data-ico-size="16"></span> Live-Scanner (Beta)</button>
       <div class="field" style="margin-top:14px">
         <label for="bcInput">oder Nummer eintippen</label>
         <div class="row">
@@ -1610,6 +1613,48 @@ $$('#modePick button').forEach(b => b.onclick = ()=>{
 let scanStream = null, scanTimer = null, detector = null;
 let camList = [], camIndex = -1;
 
+async function ensureDetector(){
+  if(detector) return detector;
+  const formats = await window.BarcodeDetector.getSupportedFormats();
+  const want = formats.filter(f => /ean|upc|code_128|code_39|itf/.test(f));
+  detector = new window.BarcodeDetector({formats: want.length ? want : formats});
+  return detector;
+}
+
+// Ein einzelnes scharfes Foto ueber die native Kamera-App (wie beim Essensfoto)
+// statt Live-Vorschau: umgeht Fokus-, Zoom- und Linsen-Eigenheiten von
+// getUserMedia komplett, weil die native Foto-Pipeline des Handys uebernimmt.
+$('#btnBarcodePhoto').onclick = ()=>$('#fileBarcode').click();
+$('#fileBarcode').onchange = async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(file) await decodeBarcodePhoto(file);
+};
+async function decodeBarcodePhoto(file){
+  if(!('BarcodeDetector' in window)){
+    toast('Dieses Gerät kann Fotos nicht automatisch lesen — Nummer eintippen');
+    $('#bcInput').focus();
+    return;
+  }
+  setStatus('#bcPhotoStatus','load','Foto wird gelesen…');
+  try{
+    await ensureDetector();
+    const bitmap = await createImageBitmap(file, {resizeWidth:1800, resizeQuality:'high'});
+    const hits = await detector.detect(bitmap);
+    const code = hits && hits[0] && hits[0].rawValue;
+    setStatus('#bcPhotoStatus', null);
+    if(code){
+      tap();
+      $('#bcInput').value = code;
+      lookupBarcode(code);
+    }else{
+      toast('Kein Barcode erkannt — nochmal versuchen oder Nummer eintippen');
+    }
+  }catch(e){
+    setStatus('#bcPhotoStatus','err', 'Foto konnte nicht gelesen werden — nochmal versuchen.');
+  }
+}
+
 // Baut die Video-Constraints: bevorzugt eine gemerkte Linse (deviceId), sonst
 // facingMode "environment". Manche Handys mit mehreren Rueckkameras (Weitwinkel/
 // Normal/Tele) liefern darueber aber die falsche Linse -> "Andere Linse"-Knopf
@@ -1661,9 +1706,7 @@ async function startScan(){
     return;
   }
   try{
-    const formats = await window.BarcodeDetector.getSupportedFormats();
-    const want = formats.filter(f => /ean|upc|code_128|code_39|itf/.test(f));
-    detector = new window.BarcodeDetector({formats: want.length ? want : formats});
+    await ensureDetector();
 
     let stream;
     try{
