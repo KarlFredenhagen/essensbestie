@@ -458,6 +458,7 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 #scanHint{color:#fff;font-size:14.5px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.7);text-align:center}
 #scanDebug{color:rgba(255,255,255,.6);font-size:11.5px;font-variant-numeric:tabular-nums;margin-top:-8px;text-align:center}
 .scan-foot .btn-ghost{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3);min-width:180px;text-align:center}
+.scan-foot .btn-ghost.on{background:var(--accent);border-color:var(--accent)}
 /* Fokus-Ring: Rueckmeldung beim Antippen zum Nachfokussieren */
 .focus-ring{
   position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;
@@ -904,6 +905,7 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
   <div class="scan-foot">
     <div id="scanHint">Barcode ins Fenster halten</div>
     <div id="scanDebug"></div>
+    <button class="btn-ghost hidden" id="scanTorch"><span class="ico" data-ico="bolt" data-ico-size="15"></span> Blitz</button>
     <button class="btn-ghost hidden" id="scanSwitch"><span class="ico" data-ico="refresh" data-ico-size="15"></span> Andere Linse</button>
     <button class="btn-ghost" id="scanStop">Abbrechen</button>
   </div>
@@ -1015,7 +1017,8 @@ const ICONS = {
   edit:    '<path d="M12.6 4.6H5.4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.2"/><path d="M18 3.2a1.9 1.9 0 0 1 2.8 2.8L12.4 14.4l-3.6.8.8-3.6Z"/>',
   search:  '<circle cx="10.8" cy="10.8" r="7"/><path d="m20.4 20.4-4.6-4.6"/>',
   warn:    '<path d="M12 3.6 21.4 20H2.6Z"/><path d="M12 9.6v4.6M12 17.4h.02"/>',
-  cart:    '<path d="M2.8 3.4h2l2.7 12.9a2 2 0 0 0 2 1.6h8.3a2 2 0 0 0 2-1.6l1.5-7.7H6.2"/><circle cx="9.6" cy="20.4" r="1.5"/><circle cx="17.4" cy="20.4" r="1.5"/>'
+  cart:    '<path d="M2.8 3.4h2l2.7 12.9a2 2 0 0 0 2 1.6h8.3a2 2 0 0 0 2-1.6l1.5-7.7H6.2"/><circle cx="9.6" cy="20.4" r="1.5"/><circle cx="17.4" cy="20.4" r="1.5"/>',
+  bolt:    '<path d="M12.8 2.6 4.4 13.8h5.6l-1.8 7.6 9.4-12.2h-6Z"/>'
 };
 function ico(name, size){
   const p = ICONS[name];
@@ -1621,6 +1624,7 @@ $$('#modePick button').forEach(b => b.onclick = ()=>{
 let scanStream = null, scanTimer = null, detector = null;
 let camList = [], camIndex = -1;
 let imageCapture = null, useTakePhoto = false;
+let hasTorch = false, torchOn = false;
 
 async function ensureDetector(){
   if(detector) return detector;
@@ -1705,8 +1709,17 @@ async function attachCamStream(stream){
   // dafuer vor jeder Aufnahme neu scharfstellen. Langsamer, aber schaerfer.
   imageCapture = ('ImageCapture' in window && vt) ? new window.ImageCapture(vt) : null;
   useTakePhoto = !!imageCapture;
+
+  // Volle Diagnose statt nur der aktuellen Einstellung — damit sich ohne
+  // Raten sehen laesst, was dieses Geraet ueberhaupt an Kamera-Kontrolle
+  // zulaesst (manche Handys erlauben dem Browser gar keine Fokus-Steuerung).
+  const caps = vt && vt.getCapabilities ? vt.getCapabilities() : {};
+  hasTorch = !!caps.torch;
+  torchOn = false;
+  $('#scanTorch').classList.toggle('hidden', !hasTorch);
+  $('#scanTorch').classList.remove('on');
   $('#scanDebug').textContent = s.width
-    ? `Kamera: ${s.width}×${s.height}${s.focusMode?' · Fokus: '+s.focusMode:''}${useTakePhoto?' · Foto-Modus':''}`
+    ? `${s.width}×${s.height}${useTakePhoto?' · Foto-Modus':''} · Fokusmodi: ${caps.focusMode && caps.focusMode.length ? caps.focusMode.join(', ') : 'keine'}${hasTorch?' · Blitz verfügbar':''}`
     : '';
 
   // Erst nach erteilter Erlaubnis liefert enumerateDevices brauchbare Labels.
@@ -1762,6 +1775,24 @@ async function switchCam(){
   }
 }
 $('#scanSwitch').onclick = switchCam;
+
+// Blitz an/aus: hilft manchen Kameras beim Scharfstellen, wenn die
+// Autofokus-Steuerung selbst nicht ansprechbar ist, aber die Kamera bei mehr
+// Licht von sich aus besser fokussiert (haeufigste Ursache fuer Fokus-
+// Probleme aus naher Distanz ist zu wenig Licht am Objekt).
+$('#scanTorch').onclick = async ()=>{
+  if(!hasTorch) return;
+  const track = scanStream && scanStream.getVideoTracks()[0];
+  if(!track) return;
+  try{
+    torchOn = !torchOn;
+    await track.applyConstraints({advanced:[{torch:torchOn}]});
+    $('#scanTorch').classList.toggle('on', torchOn);
+    tap();
+  }catch{
+    toast('Blitz lässt sich hier nicht steuern');
+  }
+};
 
 function scanTick(){
   scanTimer = setTimeout(async ()=>{
