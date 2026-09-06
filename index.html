@@ -448,6 +448,16 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 .prod .c{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .prod button{background:none;border:none;color:var(--muted);padding:4px}
 
+/* Favoriten */
+.fav-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.fav-row:first-child{border-top:none}
+.fav-row .n{flex:1;min-width:0}
+.fav-row .n b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav-row .n small{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.fav-row .add{background:var(--accent-soft);color:var(--accent);border:none;border-radius:99px;
+  width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center}
+.fav-row .del{background:none;border:none;color:var(--muted);padding:4px;flex:none}
+
 /* Onboarding */
 #onb{position:fixed;inset:0;z-index:80;background:var(--bg);overflow-y:auto;padding:0 0 40px}
 #onb .inner{max-width:520px;margin:0 auto;padding:calc(34px + env(safe-area-inset-top)) 20px 20px}
@@ -541,6 +551,29 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
       </div>
     </div>
 
+    <!-- Körpermaße -->
+    <div id="measuresCard" class="hidden">
+      <h2>Körpermaße</h2>
+      <div class="card pad">
+        <div class="row">
+          <div><label for="mWaist">Taille cm</label><input type="number" id="mWaist" inputmode="decimal" step="0.5"></div>
+          <div><label for="mHip">Hüfte cm</label><input type="number" id="mHip" inputmode="decimal" step="0.5"></div>
+        </div>
+        <div class="field" style="margin-top:12px">
+          <label for="mChest">Brust cm</label>
+          <input type="number" id="mChest" inputmode="decimal" step="0.5">
+        </div>
+        <button class="btn" id="mSave" style="margin-top:14px">Eintragen</button>
+        <div class="hint" id="mTrend" style="text-align:center"></div>
+      </div>
+    </div>
+
+    <!-- Fasten -->
+    <div id="fastingCard" class="hidden">
+      <h2>Fasten</h2>
+      <div class="card pad" id="fastBox" style="text-align:center"></div>
+    </div>
+
     <!-- Mahlzeiten -->
     <h2>Mahlzeiten</h2>
     <div id="slots"></div>
@@ -550,6 +583,11 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
   <section id="v-neu" class="hidden">
     <h2 style="margin-top:20px">Mahlzeit</h2>
     <div class="seg slots" id="slotPick"></div>
+
+    <div id="favSection" class="hidden">
+      <h2><span class="ico" data-ico="star" data-ico-size="14"></span>Favoriten</h2>
+      <div class="card pad" id="favList"></div>
+    </div>
 
     <h2>Womit</h2>
     <input type="file" accept="image/*" capture="environment" id="fileCam" class="hidden">
@@ -603,6 +641,7 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
           <div id="rIngs" class="selectable" style="margin-top:12px"></div>
           <div id="rNote" class="hint" style="margin-top:12px"></div>
           <button class="btn" id="save" style="margin-top:16px">Hinzufügen</button>
+          <button class="btn-ghost" id="saveFav" style="width:100%;margin-top:10px"><span class="ico" data-ico="star" data-ico-size="15"></span> Auch als Favorit merken</button>
         </div>
       </div>
     </div>
@@ -645,7 +684,9 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
           <div class="macro f"><div class="v" id="bcFat">–</div><div class="k">Fett</div></div>
         </div>
         <div id="bcPer100" class="hint" style="margin-top:10px"></div>
+        <div id="bcExtra" class="hint" style="margin-top:2px"></div>
         <button class="btn" id="bcAdd" style="margin-top:16px">Hinzufügen</button>
+        <button class="btn-ghost" id="bcSaveFav" style="width:100%;margin-top:10px"><span class="ico" data-ico="star" data-ico-size="15"></span> Auch als Favorit merken</button>
         <button class="btn-ghost" id="bcEdit" style="width:100%;margin-top:10px"><span data-ico="edit" data-ico-size="16"></span> Werte korrigieren</button>
       </div>
     </div>
@@ -722,8 +763,13 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 
   <!-- ================= VERLAUF ================= -->
   <section id="v-verlauf" class="hidden">
-    <h2 style="margin-top:20px">Letzte 30 Tage</h2>
-    <div class="card" id="history"></div>
+    <h2 style="margin-top:20px" id="histHead">Letzte 30 Tage</h2>
+    <div class="seg sm" id="histRange">
+      <button type="button" data-n="7">7 Tage</button>
+      <button type="button" data-n="30" class="on">30 Tage</button>
+      <button type="button" data-n="90">90 Tage</button>
+    </div>
+    <div class="card" id="history" style="margin-top:10px"></div>
     <h2>Statistik</h2>
     <div class="card pad" id="stats"></div>
     <h2>Daten sichern</h2>
@@ -881,7 +927,7 @@ const MACROS = [
 ];
 const DEF_GOALS = {kcal:2000, prot:150, carb:250, fat:44, water:2500, split:DEF_SPLIT};
 const DEF_PROFILE = {sex:'m', age:25, height:178, weight:75, act:'1.375', goal:'hold'};
-const DEF_MODS = {water:true, weight:true, streak:true, recipes:true};
+const DEF_MODS = {water:true, weight:true, streak:true, recipes:true, measures:false, fasting:false};
 // Grobe Tagesaufteilung fuer den Vorschlag-Knopf bei den Mahlzeit-Grenzen.
 const LIMIT_PCT = {fruehstueck:25, mittag:35, abend:30, snack:10};
 const FACTORS = [[0.5,'½'],[0.75,'¾'],[1,'1×'],[1.5,'1½'],[2,'2×']];
@@ -890,7 +936,7 @@ const FACTORS = [[0.5,'½'],[0.75,'¾'],[1,'1×'],[1.5,'1½'],[2,'2×']];
 const K = {key:'eb_key', model:'eb_model', goals:'eb_goals', entries:'eb_entries',
            days:'eb_days', profile:'eb_profile', mods:'eb_mods', prefs:'eb_prefs',
            onb:'eb_onb', models:'eb_models', pinned:'eb_pinned', products:'eb_products',
-           limits:'eb_limits', shopping:'eb_shopping'};
+           limits:'eb_limits', shopping:'eb_shopping', favorites:'eb_favorites', fasting:'eb_fasting'};
 
 function jget(k, def){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?def:v; }catch{ return def; } }
 function jset(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ toast('Speicher voll — alte Fotos werden knapp'); } }
@@ -909,6 +955,8 @@ const store = {
   get products(){ return jget(K.products,{}); }, set products(v){ jset(K.products,v); },
   get limits(){ return jget(K.limits,{}); }, set limits(v){ jset(K.limits,v); },
   get shopping(){ return jget(K.shopping,[]); }, set shopping(v){ jset(K.shopping,v); },
+  get favorites(){ return jget(K.favorites,[]); }, set favorites(v){ jset(K.favorites,v); },
+  get fasting(){ return jget(K.fasting,{startedAt:null, targetHours:16}); }, set fasting(v){ jset(K.fasting,v); },
   get onbDone(){ return localStorage.getItem(K.onb)==='1'; }, set onbDone(v){ localStorage.setItem(K.onb, v?'1':'0'); }
 };
 
@@ -959,7 +1007,10 @@ const ICONS = {
   edit:    '<path d="M12.6 4.6H5.4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.2"/><path d="M18 3.2a1.9 1.9 0 0 1 2.8 2.8L12.4 14.4l-3.6.8.8-3.6Z"/>',
   search:  '<circle cx="10.8" cy="10.8" r="7"/><path d="m20.4 20.4-4.6-4.6"/>',
   warn:    '<path d="M12 3.6 21.4 20H2.6Z"/><path d="M12 9.6v4.6M12 17.4h.02"/>',
-  cart:    '<path d="M2.8 3.4h2l2.7 12.9a2 2 0 0 0 2 1.6h8.3a2 2 0 0 0 2-1.6l1.5-7.7H6.2"/><circle cx="9.6" cy="20.4" r="1.5"/><circle cx="17.4" cy="20.4" r="1.5"/>'
+  cart:    '<path d="M2.8 3.4h2l2.7 12.9a2 2 0 0 0 2 1.6h8.3a2 2 0 0 0 2-1.6l1.5-7.7H6.2"/><circle cx="9.6" cy="20.4" r="1.5"/><circle cx="17.4" cy="20.4" r="1.5"/>',
+  star:    '<path d="m12 3.4 2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6Z"/>',
+  ruler:   '<rect x="2.6" y="8" width="18.8" height="8" rx="1.6"/><path d="M6.6 8v3M10.6 8v3M14.6 8v5M18.6 8v3"/>',
+  timer:   '<circle cx="12" cy="12.6" r="8.4"/><path d="M12 8.2v4.4l3 2M9.4 2.6h5.2"/>'
 };
 function ico(name, size){
   const p = ICONS[name];
@@ -1311,7 +1362,7 @@ const FOOD_SCHEMA = {
     }, required:['name','menge_g','kcal','protein_g','kohlenhydrate_g','fett_g']}},
     gesamt:{type:'OBJECT', properties:{
       kcal:{type:'NUMBER'}, protein_g:{type:'NUMBER'}, kohlenhydrate_g:{type:'NUMBER'},
-      fett_g:{type:'NUMBER'}, zucker_g:{type:'NUMBER'}, ballaststoffe_g:{type:'NUMBER'}
+      fett_g:{type:'NUMBER'}, zucker_g:{type:'NUMBER'}, ballaststoffe_g:{type:'NUMBER'}, salz_g:{type:'NUMBER'}
     }, required:['kcal','protein_g','kohlenhydrate_g','fett_g']},
     hinweis:{type:'STRING'}
   },
@@ -1336,7 +1387,7 @@ Regeln:
 Antworte ausschließlich als JSON in genau dieser Form:
 {"gericht":"...","portionsgewicht_g":0,"konfidenz":"hoch|mittel|niedrig",
  "zutaten":[{"name":"...","menge_g":0,"kcal":0,"protein_g":0,"kohlenhydrate_g":0,"fett_g":0}],
- "gesamt":{"kcal":0,"protein_g":0,"kohlenhydrate_g":0,"fett_g":0,"zucker_g":0,"ballaststoffe_g":0},
+ "gesamt":{"kcal":0,"protein_g":0,"kohlenhydrate_g":0,"fett_g":0,"zucker_g":0,"ballaststoffe_g":0,"salz_g":0},
  "hinweis":"..."}`;
 
 const REC_SCHEMA = {
@@ -1358,6 +1409,7 @@ function show(v){
   $$('nav button').forEach(b => b.classList.toggle('on', b.dataset.v===v));
   window.scrollTo({top:0});
   if(v==='heute')   renderDay();
+  if(v==='neu')     renderFavorites();
   if(v==='ideen')   renderIdeas();
   if(v==='liste')   renderShopping();
   if(v==='verlauf') renderHistory();
@@ -1384,6 +1436,43 @@ function renderSlotPick(){
   $('#slotPick').innerHTML = SLOTS.map(s =>
     `<button data-s="${s.id}" class="${s.id===pickedSlot?'on':''}"><span class="em">${ico(s.icon, 17)}</span>${s.name}</button>`).join('');
   $$('#slotPick button').forEach(b => b.onclick = ()=>{ pickedSlot=b.dataset.s; tap(); renderSlotPick(); });
+}
+
+/* ============ Favoriten ============ */
+function renderFavorites(){
+  const favs = store.favorites;
+  $('#favSection').classList.toggle('hidden', !favs.length);
+  if(!favs.length) return;
+  $('#favList').innerHTML = favs.map(f => `
+    <div class="fav-row">
+      <div class="n"><b>${esc(f.name)}</b><small>${r0(f.kcal)} kcal · ${r1(f.prot)} P · ${r1(f.carb)} K · ${r1(f.fat)} F</small></div>
+      <button class="add" data-id="${f.id}" title="Eintragen">${ico('plus',18)}</button>
+      <button class="del" data-id="${f.id}" title="Löschen">${ico('close',16)}</button>
+    </div>`).join('');
+  $$('#favList .add').forEach(b => b.onclick = ()=>{
+    const f = store.favorites.find(x=>x.id===b.dataset.id);
+    if(!f) return;
+    addEntry({
+      date:todayIso(), time:new Date().toISOString(), slot:pickedSlot,
+      name:f.name, kcal:f.kcal, prot:f.prot, carb:f.carb, fat:f.fat,
+      zucker:f.zucker??null, ballast:f.ballast??null, salz:f.salz??null,
+      gewicht:f.gewicht??null, konfidenz:f.konfidenz||'mittel',
+      note:'Favorit', thumb:f.thumb||null
+    });
+    viewDate = todayIso();
+    tap(); toast('Eingetragen');
+    show('heute');
+  });
+  $$('#favList .del').forEach(b => b.onclick = ()=>{
+    store.favorites = store.favorites.filter(x=>x.id!==b.dataset.id);
+    tap(); renderFavorites();
+  });
+}
+function saveFavorite(data){
+  const list = store.favorites;
+  list.push({id: Date.now()+'-'+Math.random().toString(36).slice(2,7), ...data});
+  store.favorites = list;
+  toast('Als Favorit gemerkt');
 }
 
 // Der Essen-Bereich (Foto/Notiz/Ergebnis) ist zunaechst eingeklappt und
@@ -1466,6 +1555,7 @@ function scaled(){
     carb:r1((g.kohlenhydrate_g||0)*factor), fat:r1((g.fett_g||0)*factor),
     zucker: g.zucker_g!=null ? r1(g.zucker_g*factor) : null,
     ballast: g.ballaststoffe_g!=null ? r1(g.ballaststoffe_g*factor) : null,
+    salz: g.salz_g!=null ? r1(g.salz_g*factor) : null,
     gewicht: current.portionsgewicht_g ? r0(current.portionsgewicht_g*factor) : null
   };
 }
@@ -1496,6 +1586,7 @@ function renderResult(){
   const ex=[];
   if(s.zucker!=null)  ex.push(`Zucker ${s.zucker} g`);
   if(s.ballast!=null) ex.push(`Ballaststoffe ${s.ballast} g`);
+  if(s.salz!=null)    ex.push(`Salz ${s.salz} g`);
   $('#rExtra').textContent = ex.join('  ·  ');
 
   const ings = current.zutaten||[];
@@ -1542,6 +1633,7 @@ $('#save').onclick = ()=>{
     date:todayIso(), time:new Date().toISOString(), slot:pickedSlot,
     name: current.gericht||'Mahlzeit',
     kcal:s.kcal, prot:s.prot, carb:s.carb, fat:s.fat,
+    zucker:s.zucker, ballast:s.ballast, salz:s.salz,
     gewicht:s.gewicht, konfidenz:current.konfidenz||'mittel',
     note:$('#note').value.trim(), thumb:photoThumb||null
   });
@@ -1552,6 +1644,15 @@ $('#save').onclick = ()=>{
   viewDate = todayIso();
   toast('Gespeichert');
   show('heute');
+};
+$('#saveFav').onclick = ()=>{
+  if(!current) return;
+  const s = scaled();
+  saveFavorite({
+    name: current.gericht||'Mahlzeit', kcal:s.kcal, prot:s.prot, carb:s.carb, fat:s.fat,
+    zucker:s.zucker, ballast:s.ballast, salz:s.salz, gewicht:s.gewicht,
+    konfidenz:current.konfidenz||'mittel', thumb:photoThumb||null
+  });
 };
 
 /* ============ Barcode + Open Food Facts ============ */
@@ -1651,7 +1752,12 @@ async function lookupBarcode(raw){
       code,
       name: p.product_name_de || p.product_name || 'Unbenanntes Produkt',
       brand: p.brands || '',
-      per100: {kcal:r1(kcal), prot:r1(n.proteins_100g||0), carb:r1(n.carbohydrates_100g||0), fat:r1(n.fat_100g||0)},
+      per100: {
+        kcal:r1(kcal), prot:r1(n.proteins_100g||0), carb:r1(n.carbohydrates_100g||0), fat:r1(n.fat_100g||0),
+        zucker: n.sugars_100g!=null ? r1(n.sugars_100g) : null,
+        ballast: n.fiber_100g!=null ? r1(n.fiber_100g) : null,
+        salz: n.salt_100g!=null ? r1(n.salt_100g) : null
+      },
       serving: Number(p.serving_quantity) || parseQuantity(p.serving_size),
       paket: parseQuantity(p.quantity),
       source: 'off'
@@ -1696,7 +1802,12 @@ function showProduct(prod){
 
 function productMacros(){
   const f = bcGrams / 100, p = bcProduct.per100;
-  return {kcal:r0(p.kcal*f), prot:r1(p.prot*f), carb:r1(p.carb*f), fat:r1(p.fat*f)};
+  return {
+    kcal:r0(p.kcal*f), prot:r1(p.prot*f), carb:r1(p.carb*f), fat:r1(p.fat*f),
+    zucker: p.zucker!=null ? r1(p.zucker*f) : null,
+    ballast: p.ballast!=null ? r1(p.ballast*f) : null,
+    salz: p.salz!=null ? r1(p.salz*f) : null
+  };
 }
 
 function renderProduct(){
@@ -1710,6 +1821,11 @@ function renderProduct(){
   const p = bcProduct.per100;
   $('#bcPer100').textContent =
     `Pro 100 g: ${r0(p.kcal)} kcal · ${r1(p.prot)} g Protein · ${r1(p.carb)} g Kohlenh. · ${r1(p.fat)} g Fett`;
+  const ex=[];
+  if(m.zucker!=null)  ex.push(`Zucker ${m.zucker} g`);
+  if(m.ballast!=null) ex.push(`Ballaststoffe ${m.ballast} g`);
+  if(m.salz!=null)    ex.push(`Salz ${m.salz} g`);
+  $('#bcExtra').textContent = ex.join('  ·  ');
   $$('#bcQuick button').forEach(b => b.classList.toggle('on', Number(b.dataset.g)===bcGrams));
 }
 
@@ -1720,18 +1836,20 @@ function stepGrams(d){
 holdRepeat($('#bcMinus'), ()=>stepGrams(-10));
 holdRepeat($('#bcPlus'),  ()=>stepGrams( 10));
 
+// "Nutella (Nutella)" spart man sich.
+function productLabel(){
+  const b = String(bcProduct.brand||'').split(',')[0].trim();
+  return b && !bcProduct.name.toLowerCase().includes(b.toLowerCase())
+    ? `${bcProduct.name} (${b})` : bcProduct.name;
+}
 $('#bcAdd').onclick = ()=>{
   if(!bcProduct) return;
   const m = productMacros();
   addEntry({
     date:todayIso(), time:new Date().toISOString(), slot:pickedSlot,
-    name: (()=>{
-      const b = String(bcProduct.brand||'').split(',')[0].trim();
-      // "Nutella (Nutella)" spart man sich.
-      return b && !bcProduct.name.toLowerCase().includes(b.toLowerCase())
-        ? `${bcProduct.name} (${b})` : bcProduct.name;
-    })(),
+    name: productLabel(),
     kcal:m.kcal, prot:m.prot, carb:m.carb, fat:m.fat,
+    zucker:m.zucker, ballast:m.ballast, salz:m.salz,
     gewicht:r0(bcGrams), konfidenz:'hoch',
     note:'Barcode '+bcProduct.code, barcode:bcProduct.code, thumb:null
   });
@@ -1741,6 +1859,14 @@ $('#bcAdd').onclick = ()=>{
   viewDate = todayIso();
   tap(); toast('Eingetragen');
   show('heute');
+};
+$('#bcSaveFav').onclick = ()=>{
+  if(!bcProduct) return;
+  const m = productMacros();
+  saveFavorite({
+    name: productLabel(), kcal:m.kcal, prot:m.prot, carb:m.carb, fat:m.fat,
+    zucker:m.zucker, ballast:m.ballast, salz:m.salz, gewicht:r0(bcGrams), konfidenz:'hoch'
+  });
 };
 
 $('#bcEdit').onclick = ()=>{
@@ -1954,6 +2080,33 @@ function renderDay(){
     }
   }
 
+  // Körpermaße
+  $('#measuresCard').classList.toggle('hidden', !m.measures);
+  if(m.measures){
+    const dd = dayData(viewDate);
+    $('#mWaist').value = dd.waist ?? '';
+    $('#mHip').value   = dd.hip ?? '';
+    $('#mChest').value = dd.chest ?? '';
+    const days = store.days;
+    const hist = Object.keys(days).filter(d => d<=viewDate &&
+      (days[d].waist!=null || days[d].hip!=null || days[d].chest!=null)).sort();
+    if(hist.length){
+      const last = days[hist[hist.length-1]];
+      const parts = [];
+      if(last.waist!=null) parts.push(`Taille ${last.waist} cm`);
+      if(last.hip!=null)   parts.push(`Hüfte ${last.hip} cm`);
+      if(last.chest!=null) parts.push(`Brust ${last.chest} cm`);
+      $('#mTrend').textContent = `Zuletzt ${dayLabel(hist[hist.length-1])}: ${parts.join(' · ')}`;
+    } else {
+      $('#mTrend').textContent = 'Noch kein Wert eingetragen.';
+    }
+  }
+
+  // Fasten — Live-Zustand, unabhaengig vom betrachteten Verlaufstag
+  const showFasting = m.fasting && viewDate===todayIso();
+  $('#fastingCard').classList.toggle('hidden', !showFasting);
+  if(showFasting) renderFasting();
+
   // Mahlzeiten-Sektionen
   const list = store.entries.filter(e=>e.date===viewDate);
   $('#slots').innerHTML = SLOTS.map(s=>{
@@ -2017,6 +2170,59 @@ $('#wSave').onclick = ()=>{
   }
   renderDay(); bump($('#wVal')); toast('Gewicht gespeichert');
 };
+
+$('#mSave').onclick = ()=>{
+  const patch = {};
+  if($('#mWaist').value!=='') patch.waist = r1(num($('#mWaist').value));
+  if($('#mHip').value!=='')   patch.hip   = r1(num($('#mHip').value));
+  if($('#mChest').value!=='') patch.chest = r1(num($('#mChest').value));
+  if(!Object.keys(patch).length){ toast('Kein Wert eingegeben'); return; }
+  setDayData(viewDate, patch);
+  renderDay(); toast('Gespeichert');
+};
+
+/* ============ Fasten ============ */
+function renderFasting(){
+  const f = store.fasting;
+  const box = $('#fastBox');
+  if(f.startedAt){
+    const ms = Date.now() - new Date(f.startedAt).getTime();
+    const h = Math.floor(ms/3600000), mnt = Math.floor((ms%3600000)/60000);
+    const targetMs = f.targetHours*3600000;
+    const remain = targetMs - ms;
+    const remainTxt = remain>0
+      ? `noch ${Math.floor(remain/3600000)}:${String(Math.floor((remain%3600000)/60000)).padStart(2,'0')} h bis zum ${f.targetHours}-h-Ziel`
+      : `Ziel von ${f.targetHours} h erreicht — weiter seit ${Math.floor((ms-targetMs)/60000)} Min.`;
+    box.innerHTML = `
+      <div class="val" style="justify-content:center;margin:0 0 4px"><b id="fastElapsed">${h}:${String(mnt).padStart(2,'0')}</b><small>h</small></div>
+      <div class="hint" style="margin:0 0 14px">${remainTxt}</div>
+      <button class="btn-ghost" id="fastStop" style="width:100%">Fasten beenden</button>`;
+    $('#fastStop').onclick = ()=>{
+      store.fasting = {startedAt:null, targetHours:f.targetHours};
+      tap(); toast('Fasten beendet'); renderFasting();
+    };
+  } else {
+    box.innerHTML = `
+      <div class="hint" style="margin:0 0 12px">Ziel wählen und starten</div>
+      <div class="seg sm" id="fastPresetSeg">
+        ${[14,16,18,20].map(h=>`<button type="button" data-h="${h}" class="${h===f.targetHours?'on':''}">${h}:${24-h}</button>`).join('')}
+      </div>
+      <button class="btn" id="fastStart" style="margin-top:14px">Fasten starten</button>`;
+    $$('#fastPresetSeg button').forEach(b => b.onclick = ()=>{
+      const g = store.fasting; g.targetHours = Number(b.dataset.h); store.fasting = g;
+      tap(); renderFasting();
+    });
+    $('#fastStart').onclick = ()=>{
+      const g = store.fasting; g.startedAt = new Date().toISOString(); store.fasting = g;
+      tap(); toast('Fasten gestartet'); renderFasting();
+    };
+  }
+}
+// Haelt die Anzeige waehrend des Fastens aktuell, ohne bei ausgeblendeter
+// Karte unnoetig zu rendern.
+setInterval(()=>{
+  if(!$('#fastingCard').classList.contains('hidden') && store.fasting.startedAt) renderFasting();
+}, 30000);
 
 /* ============ Ideen ============ */
 let recSlot = defaultSlot();
@@ -2214,9 +2420,17 @@ $('#shopClearAll').onclick = ()=>{
 };
 
 /* ============ Verlauf ============ */
+let historyRange = 30;
+$$('#histRange button').forEach(b => b.onclick = ()=>{
+  historyRange = Number(b.dataset.n);
+  $$('#histRange button').forEach(x => x.classList.toggle('on', x===b));
+  tap(); renderHistory();
+});
+
 function renderHistory(){
   const g = store.goals;
-  const days = Array.from({length:30},(_,i)=>shiftIso(todayIso(),-i));
+  $('#histHead').textContent = `Letzte ${historyRange} Tage`;
+  const days = Array.from({length:historyRange},(_,i)=>shiftIso(todayIso(),-i));
   const rows = days.map(d=>({d, t:totalsFor(d)})).filter(x=>x.t.kcal>0);
 
   const box = $('#history');
@@ -2236,6 +2450,16 @@ function renderHistory(){
 
   const avg = k => r0(rows.reduce((a,r)=>a+r.t[k],0)/rows.length);
   const inGoal = rows.filter(r=>Math.abs(r.t.kcal-g.kcal) <= g.kcal*0.1).length;
+
+  // Durchschnittliche Makro-Verteilung als Prozent-Anteile statt nur Gramm.
+  const avgProt = avg('prot'), avgCarb = avg('carb'), avgFat = avg('fat');
+  const kcalFromMacros = avgProt*4 + avgCarb*4 + avgFat*9;
+  const pct = kcalFromMacros>0 ? {
+    carb: r0(avgCarb*4/kcalFromMacros*100),
+    prot: r0(avgProt*4/kcalFromMacros*100),
+    fat:  r0(avgFat*9/kcalFromMacros*100)
+  } : {carb:0,prot:0,fat:0};
+
   $('#stats').innerHTML = `
     <div class="macro-grid">
       <div class="macro kc"><div class="v">${avg('kcal')}</div><div class="k">Ø kcal</div></div>
@@ -2243,8 +2467,16 @@ function renderHistory(){
       <div class="macro c"><div class="v">${avg('carb')}</div><div class="k">Ø Kohlenh.</div></div>
       <div class="macro f"><div class="v">${avg('fat')}</div><div class="k">Ø Fett</div></div>
     </div>
+    <div class="dist-bar" style="margin-top:14px">
+      <i style="width:${pct.carb}%;background:var(--carb)"></i><i style="width:${pct.prot}%;background:var(--prot)"></i><i style="width:${pct.fat}%;background:var(--fat)"></i>
+    </div>
+    <div class="dist-legend">
+      <div><i style="background:var(--carb)"></i>Kohlenh. ${pct.carb}%</div>
+      <div><i style="background:var(--prot)"></i>Protein ${pct.prot}%</div>
+      <div><i style="background:var(--fat)"></i>Fett ${pct.fat}%</div>
+    </div>
     <div class="hint" style="margin-top:12px">
-      ${rows.length} Tage erfasst · an ${inGoal} davon lagst du im 10 %-Fenster um dein kcal-Ziel · aktuelle Serie ${streak()} Tage.
+      ${rows.length} von ${historyRange} Tagen erfasst · an ${inGoal} davon lagst du im 10 %-Fenster um dein kcal-Ziel · aktuelle Serie ${streak()} Tage.
     </div>`;
 }
 
@@ -2263,22 +2495,25 @@ $('#expJson').onclick = ()=>{
   }, null, 2), 'application/json');
 };
 $('#expCsv').onclick = ()=>{
-  const head = 'Datum;Zeit;Mahlzeit;Gericht;kcal;Protein_g;Kohlenhydrate_g;Fett_g;Gewicht_g;Konfidenz\n';
+  const head = 'Datum;Zeit;Mahlzeit;Gericht;kcal;Protein_g;Kohlenhydrate_g;Fett_g;Zucker_g;Ballaststoffe_g;Salz_g;Gewicht_g;Konfidenz\n';
   const body = [...store.entries].sort((a,b)=>a.time<b.time?-1:1).map(e=>[
     e.date, new Date(e.time).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}),
     SLOTS.find(s=>s.id===(e.slot||'snack'))?.name||'',
     '"'+String(e.name).replace(/"/g,'""')+'"',
-    r0(e.kcal), r1(e.prot), r1(e.carb), r1(e.fat), e.gewicht||'', e.konfidenz||''
+    r0(e.kcal), r1(e.prot), r1(e.carb), r1(e.fat),
+    e.zucker??'', e.ballast??'', e.salz??'', e.gewicht||'', e.konfidenz||''
   ].join(';')).join('\n');
   download(`essensbestie-${todayIso()}.csv`, '﻿'+head+body, 'text/csv');
 };
 
 /* ============ Einstellungen ============ */
 const MOD_INFO = {
-  water:   ['droplet', 'Wasser',      'Trinkmenge pro Tag mitzählen'],
-  weight:  ['scale',   'Gewicht',     'Tägliches Gewicht und Trend'],
-  streak:  ['flame',   'Streak',      'Serie an Tagen mit Einträgen'],
-  recipes: ['sparkle', 'Rezeptideen', 'Vorschläge im Restbudget']
+  water:    ['droplet', 'Wasser',      'Trinkmenge pro Tag mitzählen'],
+  weight:   ['scale',   'Gewicht',     'Tägliches Gewicht und Trend'],
+  streak:   ['flame',   'Streak',      'Serie an Tagen mit Einträgen'],
+  recipes:  ['sparkle', 'Rezeptideen', 'Vorschläge im Restbudget'],
+  measures: ['ruler',   'Körpermaße',  'Taille, Hüfte, Brust mit Trend'],
+  fasting:  ['timer',   'Fasten',      'Intervallfasten mit Timer']
 };
 
 /* ---- Kalorien- und Makro-Editor, geteilt von Onboarding und Einstellungen ---- */

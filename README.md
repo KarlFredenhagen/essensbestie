@@ -63,7 +63,12 @@ aber nie deinen Schluessel.
   mit Puffer - bei 80 kcal Rest wird bis ca. 200 kcal gesucht, sonst kaeme nur
   Alibi-Essen zurueck. Ohne eigene Grenze deckelt die App eine Mahlzeit auf
   40 Prozent des Tagesziels
-- Optionale Module: Wasser, Gewichtstrend, Streak, Rezeptideen
+- Optionale Module: Wasser, Gewichtstrend, Streak, Rezeptideen, Koerpermasse
+  (Taille/Huefte/Brust mit Trend), Intervallfasten (Timer mit 14:10/16:8/18:6/20:4)
+- Favoriten: jede Analyse (Foto oder Barcode) laesst sich als Favorit merken
+  und spaeter mit einem Tipp erneut eintragen, ohne neue Analyse
+- Detaillierte Naehrwerte wo verfuegbar: Zucker, Ballaststoffe, Salz (aus der
+  Gemini-Analyse bzw. von Open Food Facts), zusaetzlich zu den Makros
 - Modell-Auswahl fragt den eigenen Key, welche Modelle er freischaltet;
   bei einem 404 schaltet die App automatisch auf ein verfuegbares um
 - Rezeptvorschlaege: drei proteinreiche Ideen, die ins Restbudget des Tages passen,
@@ -71,7 +76,8 @@ aber nie deinen Schluessel.
 - Einkaufsliste: bei jedem Rezept Zutaten per Haekchen auswaehlen und mit einem
   Tipp uebernehmen, dazu eigene Eintraege von Hand. Abgehakte Sachen bleiben
   durchgestrichen stehen, bis man sie einzeln entfernt oder die Liste leert
-- Verlauf ueber 30 Tage, Durchschnitte, Export als JSON und CSV
+- Verlauf ueber 7/30/90 Tage waehlbar, Durchschnitte inkl. Makro-Verteilung
+  in Prozent, Export als JSON und CSV
 - Offline-faehig per Service Worker; ohne Netz laeuft alles ausser der Analyse
 
 ## Kosten
