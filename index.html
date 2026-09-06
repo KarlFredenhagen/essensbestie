@@ -1620,6 +1620,7 @@ $$('#modePick button').forEach(b => b.onclick = ()=>{
 /* ---- Kamera-Scan ---- */
 let scanStream = null, scanTimer = null, detector = null;
 let camList = [], camIndex = -1;
+let imageCapture = null, useTakePhoto = false;
 
 async function ensureDetector(){
   if(detector) return detector;
@@ -1696,7 +1697,17 @@ async function attachCamStream(stream){
   await focusContinuous();
   const vt = scanStream.getVideoTracks()[0];
   const s = vt && vt.getSettings ? vt.getSettings() : {};
-  $('#scanDebug').textContent = s.width ? `Kamera: ${s.width}×${s.height}${s.focusMode?' · Fokus: '+s.focusMode:''}` : '';
+
+  // Die Live-Vorschau nutzt die "Video"-Kamera-Pipeline, die auf vielen
+  // Handys keinen richtigen Autofokus macht (auf stabile Bewegtbilder statt
+  // Schaerfe optimiert). ImageCapture.takePhoto() nutzt stattdessen die
+  // "Foto"-Pipeline (dieselbe, die auch "Foto vom Barcode" nutzt) und darf
+  // dafuer vor jeder Aufnahme neu scharfstellen. Langsamer, aber schaerfer.
+  imageCapture = ('ImageCapture' in window && vt) ? new window.ImageCapture(vt) : null;
+  useTakePhoto = !!imageCapture;
+  $('#scanDebug').textContent = s.width
+    ? `Kamera: ${s.width}×${s.height}${s.focusMode?' · Fokus: '+s.focusMode:''}${useTakePhoto?' · Foto-Modus':''}`
+    : '';
 
   // Erst nach erteilter Erlaubnis liefert enumerateDevices brauchbare Labels.
   try{
@@ -1726,7 +1737,9 @@ async function startScan(){
     }
     await attachCamStream(stream);
     $('#scanner').classList.remove('hidden');
-    $('#scanHint').textContent = 'Barcode ins Fenster halten — bei Unschärfe kurz antippen';
+    $('#scanHint').textContent = useTakePhoto
+      ? 'Barcode ins Fenster halten — die App knipst alle ~1s ein scharfes Foto'
+      : 'Barcode ins Fenster halten — bei Unschärfe kurz antippen';
     scanTick();
   }catch(e){
     stopScan();
@@ -1754,7 +1767,18 @@ function scanTick(){
   scanTimer = setTimeout(async ()=>{
     if(!detector || !scanStream) return;
     try{
-      const hits = await detector.detect($('#scanVid'));
+      let source = $('#scanVid');
+      if(useTakePhoto){
+        try{
+          const blob = await imageCapture.takePhoto();
+          source = await createImageBitmap(blob);
+        }catch{
+          // Dieses Geraet/Chrome-Version mag takePhoto() nicht -> ab jetzt
+          // einfach wieder vom Live-Bild lesen statt bei jedem Tick zu scheitern.
+          useTakePhoto = false;
+        }
+      }
+      const hits = await detector.detect(source);
       const code = hits && hits[0] && hits[0].rawValue;
       if(code){
         tap();
@@ -1765,7 +1789,7 @@ function scanTick(){
       }
     }catch{}
     scanTick();
-  }, 160);
+  }, useTakePhoto ? 900 : 160);
 }
 
 function stopScan(){
