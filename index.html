@@ -459,6 +459,8 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 #scanDebug{color:rgba(255,255,255,.6);font-size:11.5px;font-variant-numeric:tabular-nums;margin-top:-8px;text-align:center}
 .scan-foot .btn-ghost{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3);min-width:180px;text-align:center}
 .scan-foot .btn-ghost.on{background:var(--accent);border-color:var(--accent)}
+.scan-focus{display:flex;align-items:center;gap:10px;width:min(84vw,340px);color:#fff;accent-color:var(--accent)}
+.scan-focus input{flex:1}
 /* Fokus-Ring: Rueckmeldung beim Antippen zum Nachfokussieren */
 .focus-ring{
   position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;
@@ -905,6 +907,10 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
   <div class="scan-foot">
     <div id="scanHint">Barcode ins Fenster halten</div>
     <div id="scanDebug"></div>
+    <div class="scan-focus hidden" id="scanFocusWrap">
+      <span class="ico" data-ico="target" data-ico-size="15"></span>
+      <input type="range" id="scanFocus">
+    </div>
     <button class="btn-ghost hidden" id="scanTorch"><span class="ico" data-ico="bolt" data-ico-size="15"></span> Blitz</button>
     <button class="btn-ghost hidden" id="scanSwitch"><span class="ico" data-ico="refresh" data-ico-size="15"></span> Andere Linse</button>
     <button class="btn-ghost" id="scanStop">Abbrechen</button>
@@ -1625,6 +1631,7 @@ let scanStream = null, scanTimer = null, detector = null;
 let camList = [], camIndex = -1;
 let imageCapture = null, useTakePhoto = false;
 let hasTorch = false, torchOn = false;
+let focusRange = null;
 
 async function ensureDetector(){
   if(detector) return detector;
@@ -1702,14 +1709,6 @@ async function attachCamStream(stream){
   const vt = scanStream.getVideoTracks()[0];
   const s = vt && vt.getSettings ? vt.getSettings() : {};
 
-  // Die Live-Vorschau nutzt die "Video"-Kamera-Pipeline, die auf vielen
-  // Handys keinen richtigen Autofokus macht (auf stabile Bewegtbilder statt
-  // Schaerfe optimiert). ImageCapture.takePhoto() nutzt stattdessen die
-  // "Foto"-Pipeline (dieselbe, die auch "Foto vom Barcode" nutzt) und darf
-  // dafuer vor jeder Aufnahme neu scharfstellen. Langsamer, aber schaerfer.
-  imageCapture = ('ImageCapture' in window && vt) ? new window.ImageCapture(vt) : null;
-  useTakePhoto = !!imageCapture;
-
   // Volle Diagnose statt nur der aktuellen Einstellung — damit sich ohne
   // Raten sehen laesst, was dieses Geraet ueberhaupt an Kamera-Kontrolle
   // zulaesst (manche Handys erlauben dem Browser gar keine Fokus-Steuerung).
@@ -1718,8 +1717,31 @@ async function attachCamStream(stream){
   torchOn = false;
   $('#scanTorch').classList.toggle('hidden', !hasTorch);
   $('#scanTorch').classList.remove('on');
+
+  // "manual" statt "continuous"/"single-shot": kein Autofokus moeglich, aber
+  // die Linsenposition laesst sich direkt per focusDistance setzen — dafuer
+  // ein Regler, den man beim Blick auf die Vorschau selbst scharfstellt.
+  const fd = caps.focusDistance;
+  focusRange = (fd && typeof fd.min==='number' && typeof fd.max==='number' && fd.max>fd.min) ? fd : null;
+  $('#scanFocusWrap').classList.toggle('hidden', !focusRange);
+  if(focusRange){
+    const el = $('#scanFocus');
+    el.min = focusRange.min; el.max = focusRange.max; el.step = focusRange.step || ((focusRange.max-focusRange.min)/100);
+    el.value = focusRange.min + (focusRange.max-focusRange.min)*0.65;
+    try{ await vt.applyConstraints({advanced:[{focusMode:'manual', focusDistance:Number(el.value)}]}); }catch{}
+  }
+
+  // Die Live-Vorschau nutzt die "Video"-Kamera-Pipeline, die auf vielen
+  // Handys keinen richtigen Autofokus macht (auf stabile Bewegtbilder statt
+  // Schaerfe optimiert). ImageCapture.takePhoto() nutzt stattdessen die
+  // "Foto"-Pipeline (dieselbe, die auch "Foto vom Barcode" nutzt) und darf
+  // dafuer vor jeder Aufnahme neu scharfstellen — aber nur noetig, wenn es
+  // keinen manuellen Regler gibt, sonst reicht das schnelle Live-Bild.
+  imageCapture = ('ImageCapture' in window && vt) ? new window.ImageCapture(vt) : null;
+  useTakePhoto = !!imageCapture && !focusRange;
+
   $('#scanDebug').textContent = s.width
-    ? `${s.width}×${s.height}${useTakePhoto?' · Foto-Modus':''} · Fokusmodi: ${caps.focusMode && caps.focusMode.length ? caps.focusMode.join(', ') : 'keine'}${hasTorch?' · Blitz verfügbar':''}`
+    ? `${s.width}×${s.height}${useTakePhoto?' · Foto-Modus':''}${focusRange?' · manueller Fokus':''} · Fokusmodi: ${caps.focusMode && caps.focusMode.length ? caps.focusMode.join(', ') : 'keine'}${hasTorch?' · Blitz verfügbar':''}`
     : '';
 
   // Erst nach erteilter Erlaubnis liefert enumerateDevices brauchbare Labels.
@@ -1750,9 +1772,11 @@ async function startScan(){
     }
     await attachCamStream(stream);
     $('#scanner').classList.remove('hidden');
-    $('#scanHint').textContent = useTakePhoto
-      ? 'Barcode ins Fenster halten — die App knipst alle ~1s ein scharfes Foto'
-      : 'Barcode ins Fenster halten — bei Unschärfe kurz antippen';
+    $('#scanHint').textContent = focusRange
+      ? 'Barcode ins Fenster halten — mit dem Regler unten scharfstellen'
+      : useTakePhoto
+        ? 'Barcode ins Fenster halten — die App knipst alle ~1s ein scharfes Foto'
+        : 'Barcode ins Fenster halten — bei Unschärfe kurz antippen';
     scanTick();
   }catch(e){
     stopScan();
@@ -1775,6 +1799,15 @@ async function switchCam(){
   }
 }
 $('#scanSwitch').onclick = switchCam;
+
+// Manueller Fokus-Regler: bei "manual"-Fokusmodus laesst sich kein Autofokus
+// ansteuern, aber die Linsenposition direkt per focusDistance setzen. Der
+// Nutzer stellt anhand der Vorschau selbst scharf, wie bei einer Handkamera.
+$('#scanFocus').oninput = async ()=>{
+  const track = scanStream && scanStream.getVideoTracks()[0];
+  if(!track) return;
+  try{ await track.applyConstraints({advanced:[{focusMode:'manual', focusDistance:Number($('#scanFocus').value)}]}); }catch{}
+};
 
 // Blitz an/aus: hilft manchen Kameras beim Scharfstellen, wenn die
 // Autofokus-Steuerung selbst nicht ansprechbar ist, aber die Kamera bei mehr
