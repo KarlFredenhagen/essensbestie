@@ -439,7 +439,7 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 
 /* Barcode-Scanner */
 #scanner{position:fixed;inset:0;z-index:90;background:#000}
-#scanVid{width:100%;height:100%;object-fit:cover}
+#scanVid{width:100%;height:100%;object-fit:contain}
 .scan-mask{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
 .scan-window{
   position:relative;width:min(84vw,340px);height:190px;border-radius:18px;
@@ -1618,16 +1618,13 @@ async function startScan(){
     const want = formats.filter(f => /ean|upc|code_128|code_39|itf/.test(f));
     detector = new window.BarcodeDetector({formats: want.length ? want : formats});
 
-    // Ohne passendes Seitenverhaeltnis liefert die Kamera oft ein breites 16:9-Bild.
-    // object-fit:cover zieht das auf ein hohes Handydisplay dann um ein Vielfaches
-    // hoch und beschneidet den Grossteil weg -> wirkt komplett unscharf, ganz
-    // unabhaengig vom tatsaechlichen Fokus. Deshalb gleich im Seitenverhaeltnis
-    // des Bildschirms anfragen, dann passt Kamerabild und Anzeige zusammen.
-    const screenAr = (window.innerHeight / window.innerWidth) || 16/9;
-    const wantW = 1080, wantH = Math.min(1920, Math.round(wantW * screenAr));
-    // aspectRatio-Constraint ist Breite/Hoehe, nicht Hoehe/Breite — bei Hochformat
-    // also ein Wert unter 1 (z.B. 0,56), sonst fordert man versehentlich Querformat an.
-    const baseVideo = {facingMode:{ideal:'environment'}, width:{ideal:wantW}, height:{ideal:wantH}, aspectRatio:{ideal:wantW/wantH}};
+    // Ein erzwungenes Hochformat-Seitenverhaeltnis (per aspectRatio-Constraint)
+    // hat manche Kameras dazu gebracht, digital in die Bildmitte reinzuzoomen
+    // statt sauber optisch zuzuschneiden -> schlechte Qualitaet. Deshalb die
+    // Kamera einfach ihr natives Bild liefern lassen (nur Aufloesung als
+    // Wunsch) und die Anzeige (object-fit:contain) daran anpassen statt
+    // umgekehrt der Kamera ein unnatuerliches Format aufzuzwingen.
+    const baseVideo = {facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}};
     try{
       scanStream = await navigator.mediaDevices.getUserMedia({
         video:{...baseVideo, advanced:[{focusMode:'continuous'}]}
