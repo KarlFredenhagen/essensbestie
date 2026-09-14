@@ -46,11 +46,14 @@ aber nie deinen Schluessel.
   Fokus-Steuerung der Kamera). Nachschlagen bei Open Food Facts - der
   gemeinnuetzigen
   europaeischen Lebensmitteldatenbank, frei und ohne Konto. Menge per Stepper
-  und Schnellwahl (Portion / 100 g / Packung)
+  (10 g, plus +5/-5 g fuer die Feinjustierung) und Schnellwahl (Portion / 100 g / Packung)
 - Kennt Open Food Facts ein Produkt nicht, legt man es selbst an: Naehrwerte
   pro 100 g eintragen, danach liegt es lokal unter seinem Barcode und ist beim
   naechsten Scan sofort da, auch offline. Verwaltung unter "Mehr"
-- Vier Sektionen: Fruehstueck, Mittagessen, Abendessen, Snacks
+- Vier Sektionen: Fruehstueck, Mittagessen, Abendessen, Snacks. Eintraege
+  lassen sich per Knopf nachtraeglich in eine andere Sektion verschieben
+- Werte selbst eintragen: Name + Makros direkt eintippen, ganz ohne Foto
+  oder KI-Analyse - fuer Faelle, wo man die Zahlen schon kennt
 - Einrichtungs-Assistent: Geschlecht, Alter, Groesse, Gewicht, Aktivitaet, Ziel
   -> Kalorienziel nach Mifflin-St-Jeor, jederzeit ueberschreibbar
 - Makros als Prozentverteilung der Kalorien (Standard 50 % Kohlenhydrate,
