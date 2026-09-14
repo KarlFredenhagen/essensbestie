@@ -37,7 +37,8 @@ aber nie deinen Schluessel.
 ## Was drin ist
 
 - Foto (Kamera oder Galerie) + Notiz, Analyse per Gemini mit strukturierter JSON-Antwort
-- Portionsfaktor (1/2 bis 2x) vor dem Speichern
+- Portionsfaktor (1/2 bis 2x) vor dem Speichern, oder eigener Multiplikator
+  als Zahl eintippen (gilt genauso bei reiner Text-Analyse ohne Foto)
 - Barcode per Foto: ein scharfes Bild ueber die native Kamera-App aufnehmen
   (wie beim Essensfoto), die App liest den Code direkt aus dem Foto
   (BarcodeDetector des Browsers, keine Bibliothek) - dadurch keine Fokus-
@@ -46,7 +47,8 @@ aber nie deinen Schluessel.
   Fokus-Steuerung der Kamera). Nachschlagen bei Open Food Facts - der
   gemeinnuetzigen
   europaeischen Lebensmitteldatenbank, frei und ohne Konto. Menge per Stepper
-  (10 g, plus +5/-5 g fuer die Feinjustierung) und Schnellwahl (Portion / 100 g / Packung)
+  (10 g, plus +5/-5 g fuer die Feinjustierung), Schnellwahl (Portion / 100 g /
+  Packung) oder eigener Multiplikator (× Portion bzw. × 100 g)
 - Kennt Open Food Facts ein Produkt nicht, legt man es selbst an: Naehrwerte
   pro 100 g eintragen, danach liegt es lokal unter seinem Barcode und ist beim
   naechsten Scan sofort da, auch offline. Verwaltung unter "Mehr"

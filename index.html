@@ -665,6 +665,10 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
           <div style="margin:14px 0 6px">
             <label>Portion anpassen</label>
             <div class="seg" id="portion"></div>
+            <div class="row" style="margin-top:8px">
+              <input type="number" id="portionCustom" inputmode="decimal" step="0.1" min="0.1" placeholder="eigener Multiplikator, z.B. 1.3">
+              <button class="btn-ghost" id="portionCustomGo" style="flex:0 0 auto;padding:12px 16px" data-ico="check" data-ico-size="17"></button>
+            </div>
           </div>
           <div class="macro-grid" style="margin-top:12px">
             <div class="macro kc"><div class="v" id="mKcal">–</div><div class="k">kcal</div></div>
@@ -715,6 +719,11 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
           <button class="btn-ghost btn-sm" id="bcPlus5" style="flex:1">+5 g</button>
         </div>
         <div class="seg sm" id="bcQuick" style="margin-top:10px"></div>
+        <div class="row" style="margin-top:8px">
+          <input type="number" id="bcMultInput" inputmode="decimal" step="0.1" min="0.1" placeholder="eigener Multiplikator, z.B. 2.5">
+          <button class="btn-ghost" id="bcMultGo" style="flex:0 0 auto;padding:12px 16px" data-ico="check" data-ico-size="17"></button>
+        </div>
+        <div class="hint" id="bcMultHint" style="margin-top:4px"></div>
 
         <div class="macro-grid" style="margin-top:14px">
           <div class="macro kc"><div class="v" id="bcKcal">–</div><div class="k">kcal</div></div>
@@ -1652,7 +1661,7 @@ function renderResult(){
   $('#portion').innerHTML = FACTORS.map(([f,l]) =>
     `<button data-f="${f}" class="${f===factor?'on':''}">${l}</button>`).join('');
   $$('#portion button').forEach(b => b.onclick=()=>{
-    factor = Number(b.dataset.f); tap(); renderResult();
+    factor = Number(b.dataset.f); $('#portionCustom').value=''; tap(); renderResult();
     ['#mKcal','#mProt','#mCarb','#mFat'].forEach(id => bump($(id)));
   });
 
@@ -1674,6 +1683,15 @@ function renderResult(){
 
   $('#rNote').textContent = current.hinweis||'';
 }
+function applyPortionCustom(){
+  const v = num($('#portionCustom').value);
+  if(!(v>0)){ toast('Ungültiger Multiplikator'); return; }
+  factor = v;
+  tap(); renderResult();
+  ['#mKcal','#mProt','#mCarb','#mFat'].forEach(id => bump($(id)));
+}
+$('#portionCustomGo').onclick = applyPortionCustom;
+$('#portionCustom').addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); applyPortionCustom(); } });
 
 /* ============ Grenzen pro Mahlzeit ============ */
 // Was an einem Tag bereits auf eine Mahlzeit entfaellt.
@@ -1871,7 +1889,8 @@ function showProduct(prod){
   if(prod.paket && prod.paket !== prod.serving) quick.push([prod.paket, 'Packung', true]);
   $('#bcQuick').innerHTML = quick.map(([g,l,sub]) =>
     `<button type="button" data-g="${g}">${l}${sub?`<small>${g} g</small>`:''}</button>`).join('');
-  $$('#bcQuick button').forEach(b => b.onclick = ()=>{ bcGrams = Number(b.dataset.g); tap(); renderProduct(); });
+  $$('#bcQuick button').forEach(b => b.onclick = ()=>{ bcGrams = Number(b.dataset.g); $('#bcMultInput').value=''; tap(); renderProduct(); });
+  $('#bcMultInput').value = '';
 
   renderProduct();
   animIn($('#bcResult'));
@@ -1905,12 +1924,26 @@ function renderProduct(){
   if(m.salz!=null)    ex.push(`Salz ${m.salz} g`);
   $('#bcExtra').textContent = ex.join('  ·  ');
   $$('#bcQuick button').forEach(b => b.classList.toggle('on', Number(b.dataset.g)===bcGrams));
+  const base = bcProduct.serving || 100;
+  $('#bcMultHint').textContent = bcProduct.serving
+    ? `× Portion (${base} g)`
+    : `× 100 g, da keine Portionsgröße bekannt ist`;
 }
 
 function stepGrams(d){
   bcGrams = Math.min(3000, Math.max(1, r0(bcGrams + d)));
   renderProduct();
 }
+function applyBcMult(){
+  if(!bcProduct) return;
+  const v = num($('#bcMultInput').value);
+  if(!(v>0)){ toast('Ungültiger Multiplikator'); return; }
+  const base = bcProduct.serving || 100;
+  bcGrams = Math.min(3000, Math.max(1, r0(base*v)));
+  tap(); renderProduct();
+}
+$('#bcMultGo').onclick = applyBcMult;
+$('#bcMultInput').addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); applyBcMult(); } });
 holdRepeat($('#bcMinus'), ()=>stepGrams(-10));
 holdRepeat($('#bcPlus'),  ()=>stepGrams( 10));
 $('#bcMinus5').onclick = ()=>{ tap(); stepGrams(-5); };
