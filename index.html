@@ -1385,7 +1385,7 @@ const FOOD_SCHEMA = {
     gesamt:{type:'OBJECT', properties:{
       kcal:{type:'NUMBER'}, protein_g:{type:'NUMBER'}, kohlenhydrate_g:{type:'NUMBER'},
       fett_g:{type:'NUMBER'}, zucker_g:{type:'NUMBER'}, ballaststoffe_g:{type:'NUMBER'}, salz_g:{type:'NUMBER'}
-    }, required:['kcal','protein_g','kohlenhydrate_g','fett_g']},
+    }, required:['kcal','protein_g','kohlenhydrate_g','fett_g','zucker_g','ballaststoffe_g','salz_g']},
     hinweis:{type:'STRING'}
   },
   required:['gericht','zutaten','gesamt','konfidenz']
@@ -1398,6 +1398,8 @@ Vorgehen:
 2. Schätze pro Komponente das Gewicht in Gramm. Nutze Referenzen im Bild (Teller ca. 26 cm, Besteck, Gläser, Hände).
 3. Denke an Unsichtbares, das fast immer dabei ist: Bratöl, Butter, Dressing, Sauce, Panade, Zucker.
 4. Berechne kcal, Protein, Kohlenhydrate und Fett pro Komponente und summiere exakt auf.
+5. Schätze zusätzlich für die Gesamtmahlzeit Zucker, Ballaststoffe und Salz in Gramm — auch das
+   sind Pflichtfelder, nicht nur bei eindeutigen Fällen. Eine grobe Schätzung ist besser als 0.
 
 Regeln:
 - Die Notiz des Nutzers hat immer Vorrang vor deiner visuellen Schätzung, besonders bei Mengen.
