@@ -522,6 +522,11 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 
       <div class="mini-rings" id="miniRings"></div>
       <div class="dist" id="dist"></div>
+
+      <details style="margin-top:14px">
+        <summary>Weitere Nährwerte</summary>
+        <div class="macro-grid" id="xmacroGrid" style="margin-top:10px;grid-template-columns:repeat(3,1fr)"></div>
+      </details>
     </div>
 
     <!-- Wasser -->
@@ -1999,8 +2004,9 @@ $('#dayNext').onclick = ()=>{ viewDate = shiftIso(viewDate, 1); renderDay(); };
 
 function totalsFor(date){
   return store.entries.filter(e=>e.date===date).reduce((a,e)=>({
-    kcal:a.kcal+(e.kcal||0), prot:a.prot+(e.prot||0), carb:a.carb+(e.carb||0), fat:a.fat+(e.fat||0)
-  }), {kcal:0,prot:0,carb:0,fat:0});
+    kcal:a.kcal+(e.kcal||0), prot:a.prot+(e.prot||0), carb:a.carb+(e.carb||0), fat:a.fat+(e.fat||0),
+    zucker:a.zucker+(e.zucker||0), ballast:a.ballast+(e.ballast||0), salz:a.salz+(e.salz||0)
+  }), {kcal:0,prot:0,carb:0,fat:0,zucker:0,ballast:0,salz:0});
 }
 
 let lastRenderedDay = null, weightDraft = null;
@@ -2059,6 +2065,13 @@ function renderDay(){
        <div class="dist-legend">${perSlot.filter(x=>x.kcal>0).map((x,i) =>
          `<div><i style="background:var(--accent);opacity:${OPACITY[perSlot.indexOf(x)]}"></i>${x.s.name} ${r0(x.kcal)}</div>`).join('')}</div>`
     : `<div class="dist-empty">Noch nichts eingetragen — der Ring füllt sich mit der ersten Mahlzeit.</div>`;
+
+  // Weitere Naehrwerte (Zucker/Ballaststoffe/Salz) — eingeklappt, da nicht
+  // jeder Eintrag diese Werte hat und sie kein eigenes Tagesziel haben.
+  $('#xmacroGrid').innerHTML = `
+    <div class="macro"><div class="v">${r1(t.zucker)}</div><div class="k">Zucker g</div></div>
+    <div class="macro"><div class="v">${r1(t.ballast)}</div><div class="k">Ballaststoffe g</div></div>
+    <div class="macro"><div class="v">${r1(t.salz)}</div><div class="k">Salz g</div></div>`;
 
   // Wasser
   $('#waterCard').classList.toggle('hidden', !m.water);

@@ -68,7 +68,8 @@ aber nie deinen Schluessel.
 - Favoriten: jede Analyse (Foto oder Barcode) laesst sich als Favorit merken
   und spaeter mit einem Tipp erneut eintragen, ohne neue Analyse
 - Detaillierte Naehrwerte wo verfuegbar: Zucker, Ballaststoffe, Salz (aus der
-  Gemini-Analyse bzw. von Open Food Facts), zusaetzlich zu den Makros
+  Gemini-Analyse bzw. von Open Food Facts), zusaetzlich zu den Makros. Auf
+  "Heute" per Klapp-Element "Weitere Naehrwerte" als Tagessumme einblendbar
 - Modell-Auswahl fragt den eigenen Key, welche Modelle er freischaltet;
   bei einem 404 schaltet die App automatisch auf ein verfuegbares um
 - Rezeptvorschlaege: drei proteinreiche Ideen, die ins Restbudget des Tages passen,
