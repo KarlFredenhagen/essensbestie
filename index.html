@@ -465,7 +465,8 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 .lens-row button{background:rgba(0,0,0,.55);color:#fff;border:1px solid rgba(255,255,255,.35);
   border-radius:99px;padding:8px 14px;font-size:13px;font-weight:650}
 .lens-row button.on{background:var(--accent);border-color:var(--accent)}
-.scan-foot #scanStop{background:rgba(0,0,0,.55);color:#fff;border-color:rgba(255,255,255,.35);min-width:180px}
+.scan-btns{display:flex;gap:10px}
+.scan-foot .scan-btns .btn-ghost{background:rgba(0,0,0,.55);color:#fff;border-color:rgba(255,255,255,.35);min-width:130px}
 
 /* Ausschluss-Chips (Rezeptfilter) */
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
@@ -629,9 +630,8 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
       <a href="#" id="galleryLink">aus Galerie wählen</a> · <a href="#" id="textOnlyLink">nur Text eingeben</a> · <a href="#" id="manualLink">Werte selbst eintragen</a>
     </div>
 
-    <button class="btn" id="btnBarcodePhoto" style="margin-top:16px"><span class="ico" data-ico="barcode" data-ico-size="18"></span> Foto vom Barcode</button>
+    <button class="btn" id="scanStart" style="margin-top:16px"><span class="ico" data-ico="barcode" data-ico-size="18"></span> Barcode scannen</button>
     <div id="bcPhotoStatus"></div>
-    <button class="btn-ghost" id="scanStart" style="width:100%;margin-top:10px"><span class="ico" data-ico="scan" data-ico-size="17"></span> Live scannen (Linse wählbar)</button>
 
     <!-- ---------- Essen: Werte selbst eintragen, ohne KI-Analyse ---------- -->
     <div id="manualPanel" class="hidden">
@@ -981,7 +981,10 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
   <div class="scan-top"><div id="scanHint">Barcode ins Bild halten — wird automatisch erkannt</div></div>
   <div class="scan-foot">
     <div class="lens-row hidden" id="lensRow"></div>
-    <button class="btn-ghost" id="scanStop">Abbrechen</button>
+    <div class="scan-btns">
+      <button class="btn-ghost" id="scanPhoto">Stattdessen Foto</button>
+      <button class="btn-ghost" id="scanStop">Abbrechen</button>
+    </div>
   </div>
 </div>
 
@@ -1800,7 +1803,6 @@ async function ensureDetector(){
 // Ein einzelnes scharfes Foto ueber die native Kamera-App (wie beim Essensfoto)
 // statt Live-Vorschau: umgeht Fokus-, Zoom- und Linsen-Eigenheiten von
 // getUserMedia komplett, weil die native Foto-Pipeline des Handys uebernimmt.
-$('#btnBarcodePhoto').onclick = ()=>$('#fileBarcode').click();
 $('#fileBarcode').onchange = async e => {
   const file = e.target.files[0];
   e.target.value = '';
@@ -1940,6 +1942,8 @@ function stopScan(){
 }
 $('#scanStart').onclick = startScan;
 $('#scanStop').onclick = stopScan;
+// Backup: Live-Bild schliessen und die native Kamera-App ein Foto machen lassen.
+$('#scanPhoto').onclick = ()=>{ stopScan(); $('#fileBarcode').click(); };
 addEventListener('keydown', e => { if(e.key==='Escape' && scanStream) stopScan(); });
 
 /* ---- Nachschlagen ---- */

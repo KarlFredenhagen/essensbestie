@@ -39,8 +39,9 @@ aber nie deinen Schluessel.
 - Foto (Kamera oder Galerie) + Notiz, Analyse per Gemini mit strukturierter JSON-Antwort
 - Portionsfaktor (1/2 bis 2x) vor dem Speichern, oder eigener Multiplikator
   als Zahl eintippen (gilt genauso bei reiner Text-Analyse ohne Foto)
-- Barcode per Foto: ein scharfes Bild ueber die native Kamera-App aufnehmen
-  (wie beim Essensfoto), die App liest den Code direkt aus dem Foto
+- Barcode scannen: Live-Vorschau mit automatischer Erkennung. Als Backup gibt es
+  darin den Knopf "Stattdessen Foto": ein scharfes Bild ueber die native
+  Kamera-App aufnehmen (wie beim Essensfoto), die App liest den Code direkt aus dem Foto
   (BarcodeDetector des Browsers, keine Bibliothek) - dadurch keine Fokus-
   oder Zoom-Probleme. Zusaetzlich ein Live-Scanner, der automatisch erkennt
   und alle Rueckkameras als Knoepfe anbietet (bei manchen Handys stellt nur
