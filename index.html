@@ -452,6 +452,21 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 .prod .c{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .prod button{background:none;border:none;color:var(--muted);padding:4px}
 
+/* Live-Scanner */
+#scanner{position:fixed;inset:0;z-index:90;background:#000}
+#scanVid{width:100%;height:100%;object-fit:contain}
+.scan-frame{position:absolute;left:50%;top:50%;width:min(80vw,340px);height:150px;transform:translate(-50%,-50%);
+  border:2px solid rgba(255,255,255,.8);border-radius:16px;pointer-events:none;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+.scan-top{position:absolute;left:0;right:0;top:0;padding:calc(18px + env(safe-area-inset-top)) 20px 12px;text-align:center}
+#scanHint{color:#fff;font-size:14px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.8)}
+.scan-foot{position:absolute;left:0;right:0;bottom:0;padding:20px 20px calc(26px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;gap:14px;align-items:center}
+.lens-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.lens-row button{background:rgba(0,0,0,.55);color:#fff;border:1px solid rgba(255,255,255,.35);
+  border-radius:99px;padding:8px 14px;font-size:13px;font-weight:650}
+.lens-row button.on{background:var(--accent);border-color:var(--accent)}
+.scan-foot #scanStop{background:rgba(0,0,0,.55);color:#fff;border-color:rgba(255,255,255,.35);min-width:180px}
+
 /* Ausschluss-Chips (Rezeptfilter) */
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .chips .chip{display:flex;align-items:center;gap:5px;background:var(--card-2);color:var(--text);
@@ -616,6 +631,7 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 
     <button class="btn" id="btnBarcodePhoto" style="margin-top:16px"><span class="ico" data-ico="barcode" data-ico-size="18"></span> Foto vom Barcode</button>
     <div id="bcPhotoStatus"></div>
+    <button class="btn-ghost" id="scanStart" style="width:100%;margin-top:10px"><span class="ico" data-ico="scan" data-ico-size="17"></span> Live scannen (Linse wählbar)</button>
 
     <!-- ---------- Essen: Werte selbst eintragen, ohne KI-Analyse ---------- -->
     <div id="manualPanel" class="hidden">
@@ -958,6 +974,17 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
   </div>
 </nav>
 
+<!-- ================= LIVE-SCANNER ================= -->
+<div id="scanner" class="hidden">
+  <video id="scanVid" playsinline muted autoplay></video>
+  <div class="scan-frame"></div>
+  <div class="scan-top"><div id="scanHint">Barcode ins Bild halten — wird automatisch erkannt</div></div>
+  <div class="scan-foot">
+    <div class="lens-row hidden" id="lensRow"></div>
+    <button class="btn-ghost" id="scanStop">Abbrechen</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -994,7 +1021,7 @@ const K = {key:'eb_key', model:'eb_model', goals:'eb_goals', entries:'eb_entries
            days:'eb_days', profile:'eb_profile', mods:'eb_mods', prefs:'eb_prefs',
            onb:'eb_onb', models:'eb_models', pinned:'eb_pinned', products:'eb_products',
            limits:'eb_limits', shopping:'eb_shopping', favorites:'eb_favorites', fasting:'eb_fasting',
-           excludes:'eb_rec_excludes'};
+           excludes:'eb_rec_excludes', camDevice:'eb_cam_device'};
 
 function jget(k, def){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?def:v; }catch{ return def; } }
 function jset(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ toast('Speicher voll — alte Fotos werden knapp'); } }
@@ -1014,6 +1041,7 @@ const store = {
   get products(){ return jget(K.products,{}); }, set products(v){ jset(K.products,v); },
   get limits(){ return jget(K.limits,{}); }, set limits(v){ jset(K.limits,v); },
   get shopping(){ return jget(K.shopping,[]); }, set shopping(v){ jset(K.shopping,v); },
+  get camDevice(){ return localStorage.getItem(K.camDevice)||''; }, set camDevice(v){ localStorage.setItem(K.camDevice,v); },
   get favorites(){ return jget(K.favorites,[]); }, set favorites(v){ jset(K.favorites,v); },
   get fasting(){ return jget(K.fasting,{startedAt:null, targetHours:16}); }, set fasting(v){ jset(K.fasting,v); },
   get onbDone(){ return localStorage.getItem(K.onb)==='1'; }, set onbDone(v){ localStorage.setItem(K.onb, v?'1':'0'); }
@@ -1049,6 +1077,7 @@ const ICONS = {
   camera:  '<path d="M3 8.9A2.6 2.6 0 0 1 5.6 6.3h1.6a1 1 0 0 0 .8-.4l1-1.4a1 1 0 0 1 .8-.4h4.4a1 1 0 0 1 .8.4l1 1.4a1 1 0 0 0 .8.4h1.6A2.6 2.6 0 0 1 21 8.9v8.5a2.6 2.6 0 0 1-2.6 2.6H5.6A2.6 2.6 0 0 1 3 17.4Z"/><circle cx="12" cy="13" r="3.5"/>',
   image:   '<rect x="3" y="4.6" width="18" height="14.8" rx="2.6"/><circle cx="8.4" cy="9.6" r="1.5"/><path d="m3.6 17.6 4.3-4.3a1.9 1.9 0 0 1 2.7 0l3.6 3.6"/><path d="m13.4 14.4 1.6-1.6a1.9 1.9 0 0 1 2.7 0l2.7 2.7"/>',
   barcode: '<path d="M3 5.5v13M6.4 5.5v13M9.8 5.5v9M13.2 5.5v13M16.6 5.5v9M20 5.5v13"/>',
+  scan:    '<path d="M3 8.4V5.9A2.9 2.9 0 0 1 5.9 3h2.5M15.6 3h2.5A2.9 2.9 0 0 1 21 5.9v2.5M21 15.6v2.5a2.9 2.9 0 0 1-2.9 2.9h-2.5M8.4 21H5.9A2.9 2.9 0 0 1 3 18.1v-2.5"/><path d="M7.4 9v6M10.5 9v6M13.5 9v6M16.6 9v6"/>',
   plus:    '<path d="M12 5.2v13.6M5.2 12h13.6"/>',
   target:  '<circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="3.4"/>',
   sparkle: '<path d="M11 3.4 12.7 8 17.3 9.7 12.7 11.4 11 16 9.3 11.4 4.7 9.7 9.3 8Z"/><path d="M18.2 14.6l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8Z"/>',
@@ -1467,6 +1496,7 @@ const REC_SCHEMA = {
 /* ============ Views ============ */
 const VIEWS = ['heute','neu','ideen','liste','verlauf','set'];
 function show(v){
+  if(scanStream) stopScan();
   VIEWS.forEach(x => $('#v-'+x).classList.toggle('hidden', x!==v));
   $$('nav button').forEach(b => b.classList.toggle('on', b.dataset.v===v));
   window.scrollTo({top:0});
@@ -1800,6 +1830,110 @@ async function decodeBarcodePhoto(file){
     setStatus('#bcPhotoStatus','err', 'Foto konnte nicht gelesen werden — nochmal versuchen.');
   }
 }
+
+/* ---- Live-Scanner mit waehlbarer Linse ---- */
+// Handys mit mehreren Rueckkameras (Weit/Tele/...) melden dem Browser jede als
+// eigenes Geraet. Welche gut scharfstellt, ist von Modell zu Modell verschieden
+// (oft klappt die Tele-Linse, weil sie aus groesserer Distanz scharf sieht) —
+// deshalb zeigt der Scanner alle Rueckkameras als Knoepfe und merkt sich die Wahl.
+let scanStream = null, scanTimer = null;
+
+function stopScanStream(){
+  if(scanStream){ scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+}
+function openLens(deviceId){
+  const base = {width:{ideal:1920}, height:{ideal:1080}};
+  return navigator.mediaDevices.getUserMedia({video: deviceId
+    ? {...base, deviceId:{exact:deviceId}}
+    : {...base, facingMode:{ideal:'environment'}}});
+}
+async function attachScan(stream){
+  scanStream = stream;
+  const v = $('#scanVid');
+  v.srcObject = stream;
+  await v.play();
+  const track = stream.getVideoTracks()[0];
+  try{
+    const caps = track.getCapabilities ? track.getCapabilities() : {};
+    if(caps.focusMode && caps.focusMode.includes('continuous'))
+      await track.applyConstraints({advanced:[{focusMode:'continuous'}]});
+  }catch{}
+  await renderLenses(track.getSettings ? track.getSettings().deviceId : '');
+}
+async function renderLenses(activeId){
+  let cams = [];
+  try{
+    cams = (await navigator.mediaDevices.enumerateDevices())
+      .filter(d => d.kind==='videoinput' && !/front|user|selfie/i.test(d.label));
+  }catch{}
+  const row = $('#lensRow');
+  row.classList.toggle('hidden', cams.length < 2);
+  row.innerHTML = cams.map((c,i) =>
+    `<button type="button" data-id="${c.deviceId}" title="${esc(c.label)}" class="${c.deviceId===activeId?'on':''}">Linse ${i+1}</button>`).join('');
+  $$('#lensRow button').forEach(b => b.onclick = ()=> switchLens(b.dataset.id));
+}
+async function switchLens(id){
+  tap();
+  const prev = store.camDevice;
+  stopScanStream();   // viele Handys oeffnen nicht zwei Kameras gleichzeitig
+  try{
+    await attachScan(await openLens(id));
+    store.camDevice = id;
+  }catch{
+    toast('Diese Linse lässt sich nicht öffnen');
+    try{ await attachScan(await openLens(prev || undefined)); }catch{ stopScan(); }
+  }
+}
+async function startScan(){
+  if(!('BarcodeDetector' in window)){
+    toast('Dieses Gerät kann nicht scannen — Nummer eintippen');
+    $('#bcInput').focus();
+    return;
+  }
+  try{
+    await ensureDetector();
+    let stream;
+    try{ stream = await openLens(store.camDevice || undefined); }
+    catch(e){
+      if(!store.camDevice) throw e;
+      store.camDevice = ''; stream = await openLens();   // gemerkte Linse gibt's nicht mehr
+    }
+    $('#scanner').classList.remove('hidden');
+    await attachScan(stream);
+    scanTick();
+  }catch(e){
+    stopScan();
+    toast(e && e.name==='NotAllowedError' ? 'Kamerazugriff abgelehnt' : 'Kamera nicht verfügbar');
+  }
+}
+function scanTick(){
+  scanTimer = setTimeout(async ()=>{
+    if(!scanStream) return;
+    try{
+      const v = $('#scanVid');
+      if(v.readyState >= 2){
+        const hits = await detector.detect(v);
+        const code = hits && hits[0] && hits[0].rawValue;
+        if(code){
+          tap(); stopScan();
+          $('#bcInput').value = code;
+          lookupBarcode(code);
+          return;
+        }
+      }
+    }catch{}
+    scanTick();
+  }, 200);
+}
+function stopScan(){
+  clearTimeout(scanTimer); scanTimer = null;
+  stopScanStream();
+  const v = $('#scanVid'); if(v) v.srcObject = null;
+  $('#scanner').classList.add('hidden');
+}
+$('#scanStart').onclick = startScan;
+$('#scanStop').onclick = stopScan;
+addEventListener('keydown', e => { if(e.key==='Escape' && scanStream) stopScan(); });
 
 /* ---- Nachschlagen ---- */
 $('#bcLookup').onclick = ()=> lookupBarcode($('#bcInput').value);
