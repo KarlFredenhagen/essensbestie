@@ -1875,14 +1875,18 @@ async function renderLenses(activeId){
 async function switchLens(id){
   tap();
   const prev = store.camDevice;
+  // Die laufende Erkennungsschleife wuerde in der Luecke ohne Stream enden und
+  // danach nie neu starten — deshalb anhalten und nach dem Wechsel neu starten.
+  clearTimeout(scanTimer); scanGen++;
   stopScanStream();   // viele Handys oeffnen nicht zwei Kameras gleichzeitig
   try{
     await attachScan(await openLens(id));
     store.camDevice = id;
   }catch{
     toast('Diese Linse lässt sich nicht öffnen');
-    try{ await attachScan(await openLens(prev || undefined)); }catch{ stopScan(); }
+    try{ await attachScan(await openLens(prev || undefined)); }catch{ stopScan(); return; }
   }
+  scanTick();
 }
 async function startScan(){
   if(!('BarcodeDetector' in window)){
@@ -1906,13 +1910,16 @@ async function startScan(){
     toast(e && e.name==='NotAllowedError' ? 'Kamerazugriff abgelehnt' : 'Kamera nicht verfügbar');
   }
 }
+let scanGen = 0;   // veraltete Durchlaeufe (z.B. nach Linsenwechsel) enden von selbst
 function scanTick(){
+  const gen = scanGen;
   scanTimer = setTimeout(async ()=>{
-    if(!scanStream) return;
+    if(gen !== scanGen || !scanStream) return;
     try{
       const v = $('#scanVid');
       if(v.readyState >= 2){
         const hits = await detector.detect(v);
+        if(gen !== scanGen) return;
         const code = hits && hits[0] && hits[0].rawValue;
         if(code){
           tap(); stopScan();
@@ -1922,11 +1929,11 @@ function scanTick(){
         }
       }
     }catch{}
-    scanTick();
+    if(gen === scanGen) scanTick();
   }, 200);
 }
 function stopScan(){
-  clearTimeout(scanTimer); scanTimer = null;
+  clearTimeout(scanTimer); scanTimer = null; scanGen++;
   stopScanStream();
   const v = $('#scanVid'); if(v) v.srcObject = null;
   $('#scanner').classList.add('hidden');
