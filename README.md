@@ -80,6 +80,8 @@ aber nie deinen Schluessel.
   Ein angefangenes Rezept bleibt erhalten
 - Eintraege auf "Heute" lassen sich nachtraeglich anpassen (Name, Werte, Menge in g
   oder als Faktor) - Antippen oder Stift-Symbol
+- Barcode-Verlauf: die 12 zuletzt gescannten Produkte lassen sich ohne neuen Scan
+  wieder auswaehlen (auch offline), im Tab "Neu" und im Rezept-Builder
 - "Schnell eintragen": Ausklappmenue mit den 5 am haeufigsten gegessenen
   Mahlzeiten/Produkten, ein Tipp traegt sie mit den letzten Werten ein
 - Favoriten: jede Analyse (Foto oder Barcode) laesst sich als Favorit merken
