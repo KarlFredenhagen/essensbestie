@@ -498,7 +498,7 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 .rc-pick button{display:flex;align-items:center;background:var(--card-2);border:1px solid var(--line);
   border-radius:99px;padding:6px 12px;font-size:12.5px;font-weight:600;color:var(--text)}
 .rc-pick input{width:88px;flex:none;padding:6px 10px;font-size:13px}
-#quickBox .card{margin-top:8px}
+#quickBox .card,#favSection .card{margin-top:8px}
 
 /* Onboarding */
 #onb{position:fixed;inset:0;z-index:80;background:var(--bg);overflow-y:auto;padding:0 0 40px}
@@ -637,10 +637,10 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
       <div class="card pad" id="quickList"></div>
     </details>
 
-    <div id="favSection" class="hidden">
-      <h2><span class="ico" data-ico="star" data-ico-size="14"></span>Favoriten</h2>
+    <details id="favSection" class="hidden">
+      <summary id="favSummary">Favoriten</summary>
       <div class="card pad" id="favList"></div>
-    </div>
+    </details>
 
     <div id="myRecSection" class="hidden">
       <h2><span class="ico" data-ico="list" data-ico-size="14"></span>Meine Rezepte</h2>
@@ -1611,6 +1611,7 @@ function renderFavorites(){
   const favs = store.favorites;
   $('#favSection').classList.toggle('hidden', !favs.length);
   if(!favs.length) return;
+  $('#favSummary').textContent = `Favoriten (${favs.length})`;
   $('#favList').innerHTML = favs.map(f => `
     <div class="fav-row">
       <div class="n"><b>${esc(f.name)}</b><small>${r0(f.kcal)} kcal · ${r1(f.prot)} P · ${r1(f.carb)} K · ${r1(f.fat)} F</small></div>
