@@ -71,6 +71,17 @@ aber nie deinen Schluessel.
   40 Prozent des Tagesziels
 - Optionale Module: Wasser, Gewichtstrend, Streak, Rezeptideen, Koerpermasse
   (Taille/Huefte/Brust mit Trend), Intervallfasten (Timer mit 14:10/16:8/18:6/20:4)
+- Eigene Rezepte (im Tab "Neu"): Zutaten per Barcode (auch mehrere nacheinander),
+  Foto, Textbeschreibung oder von Hand hinzufuegen, jede Zutat spaeter anpassen
+  (Menge in g, Faktor oder die Werte direkt). Ein ganzes Gericht laesst sich per
+  Foto einlesen; die KI zerlegt es in Zutaten, die danach einzeln bearbeitbar sind
+  (auch ueber "Als Rezept anpassen" nach einer normalen Foto-Analyse). Portionen
+  einstellen, speichern und spaeter mit 1/2, 1, 1 1/2, 2 oder eigener Anzahl eintragen.
+  Ein angefangenes Rezept bleibt erhalten
+- Eintraege auf "Heute" lassen sich nachtraeglich anpassen (Name, Werte, Menge in g
+  oder als Faktor) - Antippen oder Stift-Symbol
+- "Schnell eintragen": Ausklappmenue mit den 5 am haeufigsten gegessenen
+  Mahlzeiten/Produkten, ein Tipp traegt sie mit den letzten Werten ein
 - Favoriten: jede Analyse (Foto oder Barcode) laesst sich als Favorit merken
   und spaeter mit einem Tipp erneut eintragen, ohne neue Analyse
 - Detaillierte Naehrwerte wo verfuegbar: Zucker, Ballaststoffe, Salz (aus der

@@ -483,6 +483,22 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 .fav-row .add{background:var(--accent-soft);color:var(--accent);border:none;border-radius:99px;
   width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center}
 .fav-row .del{background:none;border:none;color:var(--muted);padding:4px;flex:none}
+.fav-row .edit{background:none;border:none;color:var(--muted);padding:4px;flex:none;display:flex}
+
+/* Editor (Eintraege + Rezept-Zutaten), Rezept-Builder, Schnellmenue */
+.ed{display:grid;gap:10px;padding:12px 0 14px;border-top:1px dashed var(--line)}
+.card>.ed{padding:12px}
+.ed .acts{display:flex;gap:8px}
+.ed .acts>*{flex:1}
+.entry .edit{background:none;border:none;color:var(--muted);padding:4px;line-height:1;display:flex}
+.entry .txt{cursor:pointer}
+.rc-add{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.rc-add .btn-ghost{display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 8px;font-size:14px}
+.rc-pick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 0 10px}
+.rc-pick button{display:flex;align-items:center;background:var(--card-2);border:1px solid var(--line);
+  border-radius:99px;padding:6px 12px;font-size:12.5px;font-weight:600;color:var(--text)}
+.rc-pick input{width:88px;flex:none;padding:6px 10px;font-size:13px}
+#quickBox .card{margin-top:8px}
 
 /* Onboarding */
 #onb{position:fixed;inset:0;z-index:80;background:var(--bg);overflow-y:auto;padding:0 0 40px}
@@ -612,12 +628,23 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 
   <!-- ================= NEU ================= -->
   <section id="v-neu" class="hidden">
+   <div id="neuMain">
     <h2 style="margin-top:20px">Mahlzeit</h2>
     <div class="seg slots" id="slotPick"></div>
+
+    <details id="quickBox" class="hidden">
+      <summary>Schnell eintragen — die 5 häufigsten</summary>
+      <div class="card pad" id="quickList"></div>
+    </details>
 
     <div id="favSection" class="hidden">
       <h2><span class="ico" data-ico="star" data-ico-size="14"></span>Favoriten</h2>
       <div class="card pad" id="favList"></div>
+    </div>
+
+    <div id="myRecSection" class="hidden">
+      <h2><span class="ico" data-ico="list" data-ico-size="14"></span>Meine Rezepte</h2>
+      <div class="card pad" id="myRecList"></div>
     </div>
 
     <h2>Womit</h2>
@@ -632,6 +659,49 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 
     <button class="btn" id="scanStart" style="margin-top:16px"><span class="ico" data-ico="barcode" data-ico-size="18"></span> Barcode scannen</button>
     <div id="bcPhotoStatus"></div>
+
+    <button class="btn-ghost" id="rcStart" style="width:100%;margin-top:12px;padding:13px 14px;display:flex;align-items:center;justify-content:center;gap:8px"><span class="ico" data-ico="list" data-ico-size="18"></span><span id="rcStartTxt">Rezept erstellen</span></button>
+   </div>
+
+    <!-- ---------- Rezept-Builder ---------- -->
+    <div id="recipeBuilder" class="hidden">
+      <h2 style="margin-top:20px">Rezept <span class="r"><a href="#" id="rcClose" style="color:var(--accent);text-decoration:none">schließen</a></span></h2>
+      <div class="card pad">
+        <div class="field">
+          <label for="rcName">Name</label>
+          <input id="rcName" placeholder="z.B. Protein-Porridge" autocomplete="off">
+        </div>
+        <label style="margin-top:16px">Zutaten</label>
+        <div id="rcItems"></div>
+        <div class="rc-add">
+          <button class="btn-ghost" id="rcBarcode"><span class="ico" data-ico="barcode" data-ico-size="16"></span>Barcode</button>
+          <button class="btn-ghost" id="rcFoto"><span class="ico" data-ico="camera" data-ico-size="16"></span>Foto</button>
+          <button class="btn-ghost" id="rcText"><span class="ico" data-ico="sparkle" data-ico-size="16"></span>Beschreiben</button>
+          <button class="btn-ghost" id="rcManual"><span class="ico" data-ico="edit" data-ico-size="16"></span>Selbst eintragen</button>
+        </div>
+        <div class="hint" style="text-align:center"><a href="#" id="rcGallery">Zutat aus Galerie wählen</a></div>
+        <button class="btn-ghost" id="rcDish" style="width:100%;margin-top:12px"><span class="ico" data-ico="bowl" data-ico-size="16"></span> Ganzes Gericht per Foto einlesen</button>
+        <div class="hint" style="text-align:center">Die KI zerlegt das Gericht in Zutaten, die du danach einzeln anpassen kannst.</div>
+
+        <label style="margin-top:18px">Ergibt</label>
+        <div class="stepper">
+          <button class="step" id="rcPm">−</button>
+          <div class="val"><b id="rcPortions">1</b><small>Portionen</small></div>
+          <button class="step" id="rcPp">+</button>
+        </div>
+
+        <label style="margin-top:14px">Pro Portion</label>
+        <div class="macro-grid">
+          <div class="macro kc"><div class="v" id="rcKcal">–</div><div class="k">kcal</div></div>
+          <div class="macro p"><div class="v" id="rcProt">–</div><div class="k">Protein</div></div>
+          <div class="macro c"><div class="v" id="rcCarb">–</div><div class="k">Kohlenh.</div></div>
+          <div class="macro f"><div class="v" id="rcFat">–</div><div class="k">Fett</div></div>
+        </div>
+        <div class="hint" id="rcTotal" style="margin-top:8px"></div>
+        <button class="btn" id="rcSave" style="margin-top:16px">Rezept speichern</button>
+        <button class="btn-ghost" id="rcDiscard" style="width:100%;margin-top:10px">Verwerfen</button>
+      </div>
+    </div>
 
     <!-- ---------- Essen: Werte selbst eintragen, ohne KI-Analyse ---------- -->
     <div id="manualPanel" class="hidden">
@@ -697,6 +767,7 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
           <div id="rNote" class="hint" style="margin-top:12px"></div>
           <button class="btn" id="save" style="margin-top:16px">Hinzufügen</button>
           <button class="btn-ghost" id="saveFav" style="width:100%;margin-top:10px"><span class="ico" data-ico="star" data-ico-size="15"></span> Auch als Favorit merken</button>
+          <button class="btn-ghost" id="saveRecipe" style="width:100%;margin-top:10px"><span class="ico" data-ico="list" data-ico-size="15"></span> Als Rezept anpassen</button>
         </div>
       </div>
     </div>
@@ -1024,7 +1095,8 @@ const K = {key:'eb_key', model:'eb_model', goals:'eb_goals', entries:'eb_entries
            days:'eb_days', profile:'eb_profile', mods:'eb_mods', prefs:'eb_prefs',
            onb:'eb_onb', models:'eb_models', pinned:'eb_pinned', products:'eb_products',
            limits:'eb_limits', shopping:'eb_shopping', favorites:'eb_favorites', fasting:'eb_fasting',
-           excludes:'eb_rec_excludes', camDevice:'eb_cam_device'};
+           excludes:'eb_rec_excludes', camDevice:'eb_cam_device',
+           myRecipes:'eb_myrecipes', rdraft:'eb_recipe_draft'};
 
 function jget(k, def){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?def:v; }catch{ return def; } }
 function jset(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ toast('Speicher voll — alte Fotos werden knapp'); } }
@@ -1046,6 +1118,7 @@ const store = {
   get shopping(){ return jget(K.shopping,[]); }, set shopping(v){ jset(K.shopping,v); },
   get camDevice(){ return localStorage.getItem(K.camDevice)||''; }, set camDevice(v){ localStorage.setItem(K.camDevice,v); },
   get favorites(){ return jget(K.favorites,[]); }, set favorites(v){ jset(K.favorites,v); },
+  get myRecipes(){ return jget(K.myRecipes,[]); }, set myRecipes(v){ jset(K.myRecipes,v); },
   get fasting(){ return jget(K.fasting,{startedAt:null, targetHours:16}); }, set fasting(v){ jset(K.fasting,v); },
   get onbDone(){ return localStorage.getItem(K.onb)==='1'; }, set onbDone(v){ localStorage.setItem(K.onb, v?'1':'0'); }
 };
@@ -1504,7 +1577,7 @@ function show(v){
   $$('nav button').forEach(b => b.classList.toggle('on', b.dataset.v===v));
   window.scrollTo({top:0});
   if(v==='heute')   renderDay();
-  if(v==='neu')     renderFavorites();
+  if(v==='neu'){ if(recipeOpen) closeBuilder(); renderNeuLists(); }
   if(v==='ideen')   renderIdeas();
   if(v==='liste')   renderShopping();
   if(v==='verlauf') renderHistory();
@@ -1570,6 +1643,322 @@ function saveFavorite(data){
   toast('Als Favorit gemerkt');
 }
 
+const uid = () => Date.now()+'-'+Math.random().toString(36).slice(2,7);
+
+/* ============ Gemeinsamer Editor (Tageseintraege + Rezept-Zutaten) ============ */
+// Menge (g) oder Faktor aendern skaliert alle Werte relativ zum Stand beim Oeffnen;
+// die Felder lassen sich danach einzeln ueberschreiben. Zucker/Ballaststoffe/Salz
+// skalieren beim Speichern mit dem Faktor mit.
+function edHtml(o){
+  const v = x => (x==null||isNaN(x)) ? '' : x;
+  return `
+    <div class="field"><label>Name</label><input data-f="name" value="${esc(o.name)}" autocomplete="off"></div>
+    <div class="row">
+      ${o.gewicht ? `<div><label>Menge g</label><input type="number" data-f="gewicht" inputmode="decimal" value="${r0(o.gewicht)}"></div>` : ''}
+      <div><label>Menge ×</label><input type="number" data-f="mult" inputmode="decimal" step="0.1" value="1"></div>
+    </div>
+    <div class="row">
+      <div><label>kcal</label><input type="number" data-f="kcal" inputmode="decimal" value="${v(r0(o.kcal))}"></div>
+      <div><label>Protein g</label><input type="number" data-f="prot" inputmode="decimal" value="${v(r1(o.prot))}"></div>
+    </div>
+    <div class="row">
+      <div><label>Kohlenh. g</label><input type="number" data-f="carb" inputmode="decimal" value="${v(r1(o.carb))}"></div>
+      <div><label>Fett g</label><input type="number" data-f="fat" inputmode="decimal" value="${v(r1(o.fat))}"></div>
+    </div>
+    <div class="acts">
+      <button class="btn" data-a="save">Speichern</button>
+      <button class="btn-ghost" data-a="cancel">Abbrechen</button>
+    </div>`;
+}
+function edBind(root, o, onSave, onCancel){
+  const q = f => root.querySelector(`[data-f="${f}"]`);
+  const set = (f, val) => { const el = q(f); if(el) el.value = val; };
+  let sc = 1;
+  const apply = s => {
+    sc = s;
+    set('kcal', r0(o.kcal*s)); set('prot', r1(o.prot*s)); set('carb', r1(o.carb*s)); set('fat', r1(o.fat*s));
+  };
+  q('mult').oninput = ()=>{
+    const m = num(q('mult').value);
+    if(m > 0){ apply(m); if(o.gewicht) set('gewicht', r0(o.gewicht*m)); }
+  };
+  if(o.gewicht) q('gewicht').oninput = ()=>{
+    const g = num(q('gewicht').value);
+    if(g > 0){ apply(g/o.gewicht); set('mult', Math.round(g/o.gewicht*100)/100); }
+  };
+  root.querySelector('[data-a="cancel"]').onclick = ()=>{ tap(); onCancel(); };
+  root.querySelector('[data-a="save"]').onclick = ()=>{
+    const name = q('name').value.trim();
+    if(!name){ toast('Name eingeben'); q('name').focus(); return; }
+    const out = {
+      name, kcal:r0(num(q('kcal').value)), prot:r1(num(q('prot').value)),
+      carb:r1(num(q('carb').value)), fat:r1(num(q('fat').value)),
+      gewicht: o.gewicht ? (r0(num(q('gewicht').value)) || r0(o.gewicht*sc)) : null
+    };
+    for(const k of ['zucker','ballast','salz']) out[k] = o[k]!=null ? r1(o[k]*sc) : null;
+    tap(); onSave(out);
+  };
+}
+
+/* ============ Schnell eintragen: die 5 haeufigsten ============ */
+let quickTop = [];
+function renderQuick(){
+  const map = new Map();
+  for(const e of store.entries){
+    if(!e.name) continue;
+    const k = e.name.trim().toLowerCase();
+    const c = map.get(k);
+    if(!c) map.set(k, {n:1, last:e});
+    else{ c.n++; if((e.time||'') > (c.last.time||'')) c.last = e; }
+  }
+  quickTop = [...map.values()]
+    .sort((a,b) => b.n - a.n || ((b.last.time||'') > (a.last.time||'') ? 1 : -1))
+    .slice(0,5);
+  $('#quickBox').classList.toggle('hidden', !quickTop.length);
+  $('#quickList').innerHTML = quickTop.map((t,i) => `
+    <div class="fav-row">
+      <div class="n"><b>${esc(t.last.name)}</b><small>${r0(t.last.kcal)} kcal · ${t.n}× gegessen</small></div>
+      <button class="add" data-i="${i}" title="Eintragen">${ico('plus',18)}</button>
+    </div>`).join('');
+  $$('#quickList .add').forEach(b => b.onclick = ()=>{
+    const e = quickTop[Number(b.dataset.i)]?.last;
+    if(!e) return;
+    addEntry({
+      date:todayIso(), time:new Date().toISOString(), slot:pickedSlot,
+      name:e.name, kcal:e.kcal, prot:e.prot, carb:e.carb, fat:e.fat,
+      zucker:e.zucker??null, ballast:e.ballast??null, salz:e.salz??null,
+      gewicht:e.gewicht??null, konfidenz:e.konfidenz||'mittel',
+      note:e.note||'', barcode:e.barcode, thumb:e.thumb||null
+    });
+    viewDate = todayIso();
+    tap(); toast('Eingetragen');
+    show('heute');
+  });
+}
+
+/* ============ Eigene Rezepte ============ */
+// Rezept = Liste von Zutaten (jede mit eigenen Werten) + Anzahl Portionen.
+let draft = null;          // Rezept in Arbeit {id?, name, portions, items[], thumb}
+let recipeOpen = false;    // Builder sichtbar?
+let photoAsDish = false;   // Foto-Analyse liefert ganze Zutatenliste statt einer Zutat
+let rcEditIdx = null, recLogOpen = null;
+
+function loadDraft(){ draft = jget(K.rdraft, null) || {name:'', portions:1, items:[], thumb:null}; }
+function saveDraft(){ jset(K.rdraft, draft); }
+function clearDraft(){ draft = null; try{ localStorage.removeItem(K.rdraft); }catch{} }
+
+function rcTotals(r){
+  const t = {kcal:0, prot:0, carb:0, fat:0, zucker:null, ballast:null, salz:null, gewicht:0};
+  for(const i of r.items){
+    t.kcal += i.kcal||0; t.prot += i.prot||0; t.carb += i.carb||0; t.fat += i.fat||0; t.gewicht += i.gewicht||0;
+    for(const k of ['zucker','ballast','salz']) if(i[k]!=null) t[k] = (t[k]||0) + i[k];
+  }
+  return t;
+}
+// Werte fuer f Portionen.
+function rcPer(r, f){
+  const t = rcTotals(r), s = f / Math.max(1, r.portions||1);
+  const x = k => t[k]!=null ? r1(t[k]*s) : null;
+  return {kcal:r0(t.kcal*s), prot:r1(t.prot*s), carb:r1(t.carb*s), fat:r1(t.fat*s),
+          zucker:x('zucker'), ballast:x('ballast'), salz:x('salz'),
+          gewicht: t.gewicht ? r0(t.gewicht*s) : null};
+}
+
+function renderNeuLists(){
+  renderFavorites();
+  renderQuick();
+  renderMyRecipes();
+  const d = draft || jget(K.rdraft, null);
+  $('#rcStartTxt').textContent = d && d.items && d.items.length
+    ? `Rezept fortsetzen${d.name ? ': '+d.name : ''}` : 'Rezept erstellen';
+}
+
+function renderMyRecipes(){
+  const list = store.myRecipes;
+  $('#myRecSection').classList.toggle('hidden', !list.length);
+  if(!list.length) return;
+  $('#myRecList').innerHTML = list.map(r => {
+    const p = rcPer(r, 1);
+    return `
+    <div class="fav-row">
+      <div class="n"><b>${esc(r.name)}</b><small>${r.items.length} Zutaten · ${p.kcal} kcal · ${r0(p.prot)} P · ${r0(p.carb)} K · ${r0(p.fat)} F pro Portion</small></div>
+      <button class="add" data-id="${r.id}" title="Eintragen">${ico('plus',18)}</button>
+      <button class="edit" data-id="${r.id}" title="Bearbeiten">${ico('edit',16)}</button>
+      <button class="del" data-id="${r.id}" title="Löschen">${ico('close',16)}</button>
+    </div>${recLogOpen===r.id ? `
+    <div class="rc-pick"><span class="hint" style="margin:0 4px 0 0">Portionen:</span>
+      ${[[0.5,'½'],[1,'1'],[1.5,'1½'],[2,'2']].map(([f,l]) => `<button data-id="${r.id}" data-f="${f}">${l}</button>`).join('')}
+      <input type="number" inputmode="decimal" step="0.1" min="0.1" placeholder="eigene" data-custom="${r.id}">
+      <button data-id="${r.id}" data-go="1">${ico('check',14)}</button>
+    </div>` : ''}`;
+  }).join('');
+
+  $$('#myRecList .add').forEach(b => b.onclick = ()=>{
+    recLogOpen = recLogOpen===b.dataset.id ? null : b.dataset.id;
+    tap(); renderMyRecipes();
+  });
+  $$('#myRecList .rc-pick button[data-f]').forEach(b => b.onclick = ()=> logRecipe(b.dataset.id, Number(b.dataset.f)));
+  $$('#myRecList .rc-pick button[data-go]').forEach(b => b.onclick = ()=>{
+    const f = num($(`#myRecList [data-custom="${b.dataset.id}"]`).value);
+    if(!(f>0)){ toast('Ungültige Anzahl'); return; }
+    logRecipe(b.dataset.id, f);
+  });
+  $$('#myRecList .edit').forEach(b => b.onclick = ()=>{
+    const r = store.myRecipes.find(x => x.id===b.dataset.id);
+    if(!r) return;
+    const cur = draft || jget(K.rdraft, null);
+    if(cur && cur.items && cur.items.length && cur.id!==r.id &&
+       !confirm('Es gibt ein angefangenes Rezept. Es wird durch dieses ersetzt — fortfahren?')) return;
+    draft = JSON.parse(JSON.stringify(r));
+    saveDraft(); openBuilder(true);
+  });
+  $$('#myRecList .del').forEach(b => b.onclick = ()=>{
+    const r = store.myRecipes.find(x => x.id===b.dataset.id);
+    if(!r || !confirm(`Rezept „${r.name}" löschen?`)) return;
+    store.myRecipes = store.myRecipes.filter(x => x.id!==r.id);
+    tap(); renderMyRecipes();
+  });
+}
+function logRecipe(id, f){
+  const r = store.myRecipes.find(x => x.id===id);
+  if(!r) return;
+  const p = rcPer(r, f);
+  addEntry({
+    date:todayIso(), time:new Date().toISOString(), slot:pickedSlot,
+    name:r.name, kcal:p.kcal, prot:p.prot, carb:p.carb, fat:p.fat,
+    zucker:p.zucker, ballast:p.ballast, salz:p.salz, gewicht:p.gewicht,
+    konfidenz:'hoch', note:'Rezept', thumb:r.thumb||null
+  });
+  recLogOpen = null;
+  viewDate = todayIso();
+  tap(); toast('Eingetragen');
+  show('heute');
+}
+
+/* ---- Builder ---- */
+// Foto/Barcode/Text-Panels sind fuer Tageseintraege und Rezept-Zutaten dieselben;
+// recipeOpen entscheidet, wohin das Ergebnis geht.
+function resetPanels(){
+  ['#foodPanel','#manualPanel','#bcResult','#bcNew'].forEach(s => $(s).classList.add('hidden'));
+  current = null; factor = 1; bcProduct = null;
+  clearPhoto();
+  $('#note').value = ''; $('#bcInput').value = '';
+  $('#result').classList.add('hidden');
+  setStatus('#status', null); setStatus('#bcStatus', null);
+}
+function applyTarget(){
+  const rc = recipeOpen;
+  $('#save').textContent   = rc ? (photoAsDish ? 'Zutaten ins Rezept übernehmen' : 'Zutat hinzufügen') : 'Hinzufügen';
+  $('#bcAdd').textContent  = rc ? 'Zutat hinzufügen' : 'Hinzufügen';
+  $('#mnAdd').textContent  = rc ? 'Zutat hinzufügen' : 'Hinzufügen';
+  ['#saveFav','#bcSaveFav','#saveRecipe'].forEach(s => $(s).classList.toggle('hidden', rc));
+  $('#bcSaveFav').classList.toggle('hidden', rc);
+}
+function openBuilder(fresh){
+  if(!draft) loadDraft();
+  resetPanels();
+  recipeOpen = true; photoAsDish = false; rcEditIdx = null;
+  $('#neuMain').classList.add('hidden');
+  $('#recipeBuilder').classList.remove('hidden');
+  $('#rcName').value = draft.name || '';
+  applyTarget(); renderBuilder();
+  animIn($('#recipeBuilder'));
+  window.scrollTo({top:0});
+}
+function closeBuilder(){
+  recipeOpen = false; photoAsDish = false; rcEditIdx = null;
+  if(scanStream) stopScan();
+  resetPanels();
+  $('#recipeBuilder').classList.add('hidden');
+  $('#neuMain').classList.remove('hidden');
+  applyTarget(); renderNeuLists();
+}
+function renderBuilder(){
+  const d = draft;
+  $('#rcItems').innerHTML = d.items.length ? d.items.map((it,i) => `
+    <div class="fav-row">
+      <div class="n"><b>${esc(it.name)}</b><small>${it.gewicht ? r0(it.gewicht)+' g · ' : ''}${r0(it.kcal)} kcal · ${r0(it.prot)} P · ${r0(it.carb)} K · ${r0(it.fat)} F</small></div>
+      <button class="edit" data-i="${i}" title="Anpassen">${ico('edit',16)}</button>
+      <button class="del" data-i="${i}" title="Entfernen">${ico('close',16)}</button>
+    </div>${rcEditIdx===i ? `<div class="ed" data-ed="${i}">${edHtml(it)}</div>` : ''}`).join('')
+    : `<div class="hint" style="margin:8px 0 0">Noch keine Zutaten — füg unten welche hinzu.</div>`;
+
+  $$('#rcItems .edit').forEach(b => b.onclick = ()=>{
+    const i = Number(b.dataset.i); rcEditIdx = rcEditIdx===i ? null : i; tap(); renderBuilder();
+  });
+  $$('#rcItems .del').forEach(b => b.onclick = ()=>{
+    draft.items.splice(Number(b.dataset.i), 1); rcEditIdx = null; saveDraft(); tap(); renderBuilder();
+  });
+  $$('#rcItems .ed').forEach(root => {
+    const i = Number(root.dataset.ed);
+    edBind(root, d.items[i], out => {
+      Object.assign(draft.items[i], out); rcEditIdx = null; saveDraft(); renderBuilder();
+    }, ()=>{ rcEditIdx = null; renderBuilder(); });
+  });
+
+  $('#rcPortions').textContent = d.portions;
+  const per = rcPer(d, 1), t = rcTotals(d);
+  const has = d.items.length > 0;
+  $('#rcKcal').textContent = has ? per.kcal : '–';
+  $('#rcProt').textContent = has ? per.prot+' g' : '–';
+  $('#rcCarb').textContent = has ? per.carb+' g' : '–';
+  $('#rcFat').textContent  = has ? per.fat+' g' : '–';
+  $('#rcTotal').textContent = has
+    ? `Ganzes Rezept: ${r0(t.kcal)} kcal${t.gewicht ? ' · '+r0(t.gewicht)+' g' : ''} · ${r1(t.prot)} P · ${r1(t.carb)} K · ${r1(t.fat)} F`
+    : '';
+}
+function addRecipeItem(it){
+  draft.items.push({...it});
+  saveDraft(); renderBuilder();
+  toast('Zutat hinzugefügt');
+  $('#recipeBuilder').scrollIntoView({behavior:'smooth', block:'start'});
+}
+// Zutatenliste einer Foto-Analyse (skaliert mit dem gewaehlten Faktor). Zucker,
+// Ballaststoffe und Salz gibt die KI nur fuers Gesamtgericht — anteilig nach kcal verteilt.
+function dishItems(){
+  const g = current.gesamt||{}, ings = current.zutaten||[];
+  const s = scaled();
+  if(!ings.length)
+    return [{name:current.gericht||'Zutat', kcal:s.kcal, prot:s.prot, carb:s.carb, fat:s.fat,
+             zucker:s.zucker, ballast:s.ballast, salz:s.salz, gewicht:s.gewicht, src:'foto'}];
+  const sumK = ings.reduce((a,i) => a+(i.kcal||0), 0);
+  return ings.map(i => {
+    const share = sumK>0 ? (i.kcal||0)/sumK : 1/ings.length;
+    const ex = k => g[k]!=null ? r1(g[k]*factor*share) : null;
+    return {name:i.name||'Zutat', gewicht: r0((i.menge_g||0)*factor) || null,
+            kcal:r0((i.kcal||0)*factor), prot:r1((i.protein_g||0)*factor),
+            carb:r1((i.kohlenhydrate_g||0)*factor), fat:r1((i.fett_g||0)*factor),
+            zucker:ex('zucker_g'), ballast:ex('ballaststoffe_g'), salz:ex('salz_g'), src:'foto'};
+  });
+}
+
+$('#rcStart').onclick = ()=>{ tap(); openBuilder(); };
+$('#rcClose').onclick = e => { e.preventDefault(); closeBuilder(); };
+$('#rcName').oninput = ()=>{ draft.name = $('#rcName').value; saveDraft(); };
+$('#rcPm').onclick = ()=>{ draft.portions = Math.max(1, draft.portions-1); saveDraft(); tap(); renderBuilder(); };
+$('#rcPp').onclick = ()=>{ draft.portions = Math.min(50, draft.portions+1); saveDraft(); tap(); renderBuilder(); };
+$('#rcBarcode').onclick = ()=>{ photoAsDish = false; applyTarget(); startScan(); };
+$('#rcFoto').onclick    = ()=>{ photoAsDish = false; applyTarget(); $('#fileCam').click(); };
+$('#rcGallery').onclick = e => { e.preventDefault(); photoAsDish = false; applyTarget(); $('#fileLib').click(); };
+$('#rcText').onclick    = ()=>{ photoAsDish = false; applyTarget(); openFoodPanel(); $('#note').focus(); };
+$('#rcManual').onclick  = ()=>{ openManualPanel(); $('#mnName').focus(); };
+$('#rcDish').onclick    = ()=>{ photoAsDish = true; applyTarget(); $('#fileCam').click(); };
+$('#rcSave').onclick = ()=>{
+  const name = (draft.name||'').trim();
+  if(!name){ toast('Rezept benennen'); shake($('#rcName')); $('#rcName').focus(); return; }
+  if(!draft.items.length){ toast('Erst Zutaten hinzufügen'); return; }
+  const rec = {id:draft.id||uid(), name, portions:draft.portions, items:draft.items, thumb:draft.thumb||null};
+  const list = store.myRecipes, ix = list.findIndex(r => r.id===rec.id);
+  if(ix>=0) list[ix] = rec; else list.push(rec);
+  store.myRecipes = list;
+  clearDraft(); closeBuilder();
+  tap(); toast('Rezept gespeichert');
+};
+$('#rcDiscard').onclick = ()=>{
+  if(draft.items.length && !confirm('Rezept in Arbeit verwerfen?')) return;
+  clearDraft(); closeBuilder();
+};
+
 // Der Essen-Bereich (Foto/Notiz/Ergebnis) ist zunaechst eingeklappt und
 // erscheint erst, wenn tatsaechlich ein Foto gemacht oder "nur Text" gewaehlt wurde.
 function openFoodPanel(){
@@ -1594,6 +1983,9 @@ async function pickFile(file){
     $('#shot').classList.remove('hidden');
     $('#btnClear').classList.remove('hidden');
     openFoodPanel();
+    if(recipeOpen) $('#foodPanel').scrollIntoView({behavior:'smooth', block:'start'});
+    // "Ganzes Gericht per Foto": ohne weitere Notiz direkt analysieren.
+    if(recipeOpen && photoAsDish && store.key.trim()) $('#analyze').click();
   }catch(e){ toast(e.message); }
 }
 function clearPhoto(){
@@ -1616,6 +2008,13 @@ $('#mnAdd').onclick = ()=>{
   const kcal = r0(num($('#mnKcal').value));
   if(!name){ toast('Name eingeben'); $('#mnName').focus(); return; }
   if(!kcal){ toast('Kalorien eingeben'); $('#mnKcal').focus(); return; }
+  if(recipeOpen){
+    addRecipeItem({name, kcal, prot:r1(num($('#mnProt').value)), carb:r1(num($('#mnCarb').value)),
+                   fat:r1(num($('#mnFat').value)), gewicht:null, src:'manuell'});
+    $$('#manualPanel input').forEach(i => i.value = '');
+    $('#manualPanel').classList.add('hidden');
+    return;
+  }
   addEntry({
     date:todayIso(), time:new Date().toISOString(), slot:pickedSlot,
     name, kcal, prot:r1(num($('#mnProt').value)), carb:r1(num($('#mnCarb').value)), fat:r1(num($('#mnFat').value)),
@@ -1654,6 +2053,11 @@ $('#analyze').onclick = async ()=>{
     parts.push({text: FOOD_PROMPT +
       '\n\nMahlzeit: ' + (SLOTS.find(s=>s.id===pickedSlot)?.name||'') +
       '\nNotiz des Nutzers: ' + (note.trim()||'(keine)') +
+      (recipeOpen && photoAsDish
+        ? '\n\nDas Gericht soll als Rezept nachgekocht werden: Liste ALLE Zutaten einzeln auf, mit dem Gewicht, wie man sie roh bzw. zum Kochen abwiegen würde (inkl. Öl, Gewürze in Mengen, Saucen).'
+        : recipeOpen
+          ? '\n\nDas zeigt eine einzelne Zutat bzw. Komponente eines Rezepts. Gib sie als genau eine Zutat zurück; "gericht" ist ihr Name.'
+          : '') +
       (photoFull?'':'\n\nEs liegt kein Foto vor — schätze allein aus der Beschreibung.')});
 
     current = await gemini(parts, FOOD_SCHEMA, 0.3);
@@ -1755,9 +2159,34 @@ function addEntry(e){
   }
 }
 
+function resetFoodPanel(){
+  current=null; factor=1;
+  clearPhoto();
+  $('#note').value='';
+  $('#result').classList.add('hidden');
+  $('#foodPanel').classList.add('hidden');
+}
 $('#save').onclick = ()=>{
   if(!current) return;
   const s = scaled();
+  if(recipeOpen){
+    if(photoAsDish){
+      const items = dishItems();
+      draft.items.push(...items);
+      if(!(draft.name||'').trim()){ draft.name = current.gericht||''; $('#rcName').value = draft.name; }
+      if(photoThumb && !draft.thumb) draft.thumb = photoThumb;
+      saveDraft(); photoAsDish = false; applyTarget();
+      resetFoodPanel(); renderBuilder();
+      toast(items.length+' Zutaten übernommen — jetzt anpassen');
+      $('#recipeBuilder').scrollIntoView({behavior:'smooth', block:'start'});
+    }else{
+      const one = {name:current.gericht||'Zutat', kcal:s.kcal, prot:s.prot, carb:s.carb, fat:s.fat,
+                   zucker:s.zucker, ballast:s.ballast, salz:s.salz, gewicht:s.gewicht, src:'foto'};
+      resetFoodPanel();
+      addRecipeItem(one);
+    }
+    return;
+  }
   addEntry({
     date:todayIso(), time:new Date().toISOString(), slot:pickedSlot,
     name: current.gericht||'Mahlzeit',
@@ -1773,6 +2202,17 @@ $('#save').onclick = ()=>{
   viewDate = todayIso();
   toast('Gespeichert');
   show('heute');
+};
+// Analyse als Rezept uebernehmen: die erkannten Zutaten landen einzeln im Builder.
+$('#saveRecipe').onclick = ()=>{
+  if(!current) return;
+  const cur = draft || jget(K.rdraft, null);
+  if(cur && cur.items && cur.items.length &&
+     !confirm('Es gibt ein angefangenes Rezept. Es wird durch dieses ersetzt — fortfahren?')) return;
+  draft = {name:current.gericht||'', portions:1, items:dishItems(), thumb:photoThumb||null};
+  saveDraft();
+  openBuilder();   // leert dabei auch das Foto-Panel
+  toast('Zutaten übernommen — jetzt anpassen');
 };
 $('#saveFav').onclick = ()=>{
   if(!current) return;
@@ -2103,6 +2543,15 @@ function productLabel(){
 $('#bcAdd').onclick = ()=>{
   if(!bcProduct) return;
   const m = productMacros();
+  if(recipeOpen){
+    addRecipeItem({name:productLabel(), kcal:m.kcal, prot:m.prot, carb:m.carb, fat:m.fat,
+                   zucker:m.zucker, ballast:m.ballast, salz:m.salz, gewicht:r0(bcGrams),
+                   src:'barcode', barcode:bcProduct.code});
+    bcProduct = null;
+    $('#bcResult').classList.add('hidden');
+    $('#bcInput').value = '';
+    return;
+  }
   addEntry({
     date:todayIso(), time:new Date().toISOString(), slot:pickedSlot,
     name: productLabel(),
@@ -2245,14 +2694,14 @@ function totalsFor(date){
   }), {kcal:0,prot:0,carb:0,fat:0,zucker:0,ballast:0,salz:0});
 }
 
-let lastRenderedDay = null, weightDraft = null, openMoveFor = null;
+let lastRenderedDay = null, weightDraft = null, openMoveFor = null, openEditFor = null;
 
 function renderDay(){
   const g = store.goals, m = store.mods;
   const t = totalsFor(viewDate);
   const dayChanged = lastRenderedDay !== viewDate;
   lastRenderedDay = viewDate;
-  if(dayChanged) openMoveFor = null;
+  if(dayChanged) openMoveFor = openEditFor = null;
 
   $('#dayLabel').textContent = dayLabel(viewDate);
   $('#dayNext').disabled = viewDate >= todayIso();
@@ -2383,11 +2832,13 @@ function renderDay(){
       const time = new Date(e.time).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
       const img = e.thumb ? `<img src="${e.thumb}" alt="">` : `<div class="noimg">${ico(s.icon, 21)}</div>`;
       return `<div class="entry">${img}
-        <div class="txt"><b>${esc(e.name)}</b>
+        <div class="txt" data-id="${e.id}"><b>${esc(e.name)}</b>
         <small>${time} · ${r0(e.prot)} P · ${r0(e.carb)} K · ${r0(e.fat)} F</small></div>
         <div class="kc">${r0(e.kcal)}</div>
+        <button class="edit" data-id="${e.id}" title="Anpassen">${ico('edit',16)}</button>
         <button class="move" data-id="${e.id}" title="Verschieben">${ico('move',16)}</button>
         <button class="del" data-id="${e.id}" title="Löschen">${ico('close',16)}</button></div>${
+        openEditFor===e.id ? `<div class="ed" data-ed="${e.id}">${edHtml(e)}</div>` : ''}${
         openMoveFor===e.id ? `<div class="move-pick">${SLOTS.filter(x=>x.id!==s.id).map(x=>
           `<button data-id="${e.id}" data-slot="${x.id}">${ico(x.icon,14)}${x.name}</button>`).join('')}</div>` : ''}`;
     }).join('') : `<div class="slot-empty">Noch nichts eingetragen.</div>`;
@@ -2416,7 +2867,23 @@ function renderDay(){
   });
   $$('#slots .move').forEach(b => b.onclick = ()=>{
     openMoveFor = openMoveFor===b.dataset.id ? null : b.dataset.id;
+    openEditFor = null;
     tap(); renderDay();
+  });
+  const toggleEdit = id => { openEditFor = openEditFor===id ? null : id; openMoveFor = null; tap(); renderDay(); };
+  $$('#slots .edit').forEach(b => b.onclick = ()=> toggleEdit(b.dataset.id));
+  $$('#slots .entry .txt').forEach(t => t.onclick = ()=> toggleEdit(t.dataset.id));
+  $$('#slots .ed').forEach(root => {
+    const id = root.dataset.ed;
+    const e = store.entries.find(x => x.id===id);
+    if(!e) return;
+    edBind(root, e, out => {
+      const l = store.entries, t = l.find(x => x.id===id);
+      if(t) Object.assign(t, out);
+      store.entries = l;
+      openEditFor = null;
+      renderDay(); toast('Geändert');
+    }, ()=>{ openEditFor = null; renderDay(); });
   });
   $$('#slots .move-pick button').forEach(b => b.onclick = ()=>{
     const l = store.entries;
