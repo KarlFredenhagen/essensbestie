@@ -411,6 +411,26 @@ nav button .ico{line-height:0;transition:transform .28s cubic-bezier(.3,1.4,.5,1
 nav button.on{color:var(--accent)}
 nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 
+/* Schwebender Schnellzugriff (Startseite) */
+#fab{position:fixed;left:16px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:40;display:flex;flex-direction:column;
+  align-items:flex-start;gap:10px;pointer-events:none}
+#fab > *{pointer-events:auto}
+.fab-main,.fab-opt .fab-ico{width:46px;height:46px;border-radius:50%;border:1px solid var(--glass-brd);padding:0;
+  display:flex;align-items:center;justify-content:center;color:var(--accent);flex:none;
+  background:var(--glass-bg);-webkit-backdrop-filter:blur(22px) saturate(190%);backdrop-filter:blur(22px) saturate(190%);
+  box-shadow:0 8px 22px rgba(0,0,0,.22), 0 2px 6px rgba(0,0,0,.1), inset 0 1px 0 var(--glass-hi)}
+.fab-main:active,.fab-opt:active .fab-ico{transform:scale(.93)}
+.fab-opt{display:flex;align-items:center;gap:10px;background:none;border:none;padding:0;color:var(--text);
+  font-size:14px;font-weight:650;transition:opacity .2s, transform .25s cubic-bezier(.3,1.4,.5,1)}
+.fab-opt .fab-lbl{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:7px 13px;box-shadow:var(--shadow)}
+#fabCam{position:absolute;left:0;bottom:56px;opacity:0;transform:translateY(14px) scale(.8);pointer-events:none!important}
+#fab.open #fabCam{opacity:1;transform:none;pointer-events:auto!important}
+#fabScrim{position:fixed;inset:0;z-index:39;display:none}
+#fab.open ~ #fabScrim{display:block}
+#fab .fab-main .ico{transition:transform .25s}
+#fab.open .fab-main{display:none}
+#fab:not(.open) #fabBc{display:none}
+
 /* Animationen */
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes pop{0%{transform:scale(1)}42%{transform:scale(1.18)}100%{transform:scale(1)}}
@@ -1044,6 +1064,13 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 
 </main>
 
+<div id="fab" class="hidden">
+  <button class="fab-opt" id="fabCam" aria-label="Foto machen"><span class="fab-ico"><span class="ico" data-ico="camera" data-ico-size="20"></span></span><span class="fab-lbl">Foto machen</span></button>
+  <button class="fab-opt" id="fabBc" aria-label="Barcode scannen"><span class="fab-ico"><span class="ico" data-ico="barcode" data-ico-size="20"></span></span><span class="fab-lbl">Barcode scannen</span></button>
+  <button class="fab-main" id="fabMain" aria-label="Schnellzugriff"><span class="ico" data-ico="barcode" data-ico-size="20"></span></button>
+</div>
+<div id="fabScrim"></div>
+
 <nav>
   <div class="wrap">
     <div class="pill" id="navPill"></div>
@@ -1586,6 +1613,7 @@ const VIEWS = ['heute','neu','ideen','liste','verlauf','set'];
 function show(v){
   if(scanStream) stopScan();
   VIEWS.forEach(x => $('#v-'+x).classList.toggle('hidden', x!==v));
+  $('#fab').classList.toggle('hidden', v!=='heute'); fabClose();
   $$('nav button').forEach(b => b.classList.toggle('on', b.dataset.v===v));
   window.scrollTo({top:0});
   if(v==='heute')   renderDay();
@@ -1607,6 +1635,13 @@ function moveNavPill(){
 }
 addEventListener('resize', moveNavPill);
 $$('nav button').forEach(b => b.onclick = ()=>{ tap(); show(b.dataset.v); });
+
+/* Schwebender Knopf: Barcode (selber Platz) + Foto darueber */
+function fabClose(){ $('#fab').classList.remove('open'); }
+$('#fabMain').onclick = ()=>{ tap(); $('#fab').classList.add('open'); };
+$('#fabScrim').onclick = fabClose;
+$('#fabBc').onclick  = ()=>{ tap(); show('neu'); startScan(); };
+$('#fabCam').onclick = ()=>{ tap(); show('neu'); $('#fileCam').click(); };
 
 /* ============ Neu: Slot + Foto ============ */
 let pickedSlot = defaultSlot();
