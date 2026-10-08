@@ -412,18 +412,18 @@ nav button.on{color:var(--accent)}
 nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 
 /* Schwebender Schnellzugriff (Startseite) */
-#fab{position:fixed;left:16px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:40;display:flex;flex-direction:column;
-  align-items:flex-start;gap:10px;pointer-events:none}
+#fab{position:fixed;right:16px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:40;display:flex;flex-direction:column;
+  align-items:flex-end;gap:10px;pointer-events:none}
 #fab > *{pointer-events:auto}
-.fab-main,.fab-opt .fab-ico{width:46px;height:46px;border-radius:50%;border:1px solid var(--glass-brd);padding:0;
+.fab-main,.fab-opt .fab-ico{width:58px;height:58px;border-radius:50%;border:1px solid var(--glass-brd);padding:0;
   display:flex;align-items:center;justify-content:center;color:var(--accent);flex:none;
   background:var(--glass-bg);-webkit-backdrop-filter:blur(22px) saturate(190%);backdrop-filter:blur(22px) saturate(190%);
   box-shadow:0 8px 22px rgba(0,0,0,.22), 0 2px 6px rgba(0,0,0,.1), inset 0 1px 0 var(--glass-hi)}
 .fab-main:active,.fab-opt:active .fab-ico{transform:scale(.93)}
 .fab-opt{display:flex;align-items:center;gap:10px;background:none;border:none;padding:0;color:var(--text);
-  font-size:14px;font-weight:650;transition:opacity .2s, transform .25s cubic-bezier(.3,1.4,.5,1)}
+  flex-direction:row-reverse;font-size:14px;font-weight:650;transition:opacity .2s, transform .25s cubic-bezier(.3,1.4,.5,1)}
 .fab-opt .fab-lbl{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:7px 13px;box-shadow:var(--shadow)}
-#fabCam{position:absolute;left:0;bottom:56px;opacity:0;transform:translateY(14px) scale(.8);pointer-events:none!important}
+#fabCam{position:absolute;right:0;bottom:68px;opacity:0;transform:translateY(14px) scale(.8);pointer-events:none!important}
 #fab.open #fabCam{opacity:1;transform:none;pointer-events:auto!important}
 #fabScrim{position:fixed;inset:0;z-index:39;display:none}
 #fab.open ~ #fabScrim{display:block}
@@ -1065,9 +1065,9 @@ nav button.on .ico{transform:translateY(-1px) scale(1.08)}
 </main>
 
 <div id="fab" class="hidden">
-  <button class="fab-opt" id="fabCam" aria-label="Foto machen"><span class="fab-ico"><span class="ico" data-ico="camera" data-ico-size="20"></span></span><span class="fab-lbl">Foto machen</span></button>
-  <button class="fab-opt" id="fabBc" aria-label="Barcode scannen"><span class="fab-ico"><span class="ico" data-ico="barcode" data-ico-size="20"></span></span><span class="fab-lbl">Barcode scannen</span></button>
-  <button class="fab-main" id="fabMain" aria-label="Schnellzugriff"><span class="ico" data-ico="barcode" data-ico-size="20"></span></button>
+  <button class="fab-opt" id="fabCam" aria-label="Foto machen"><span class="fab-ico"><span class="ico" data-ico="camera" data-ico-size="24"></span></span><span class="fab-lbl">Foto machen</span></button>
+  <button class="fab-opt" id="fabBc" aria-label="Barcode scannen"><span class="fab-ico"><span class="ico" data-ico="barcode" data-ico-size="24"></span></span><span class="fab-lbl">Barcode scannen</span></button>
+  <button class="fab-main" id="fabMain" aria-label="Schnellzugriff"><span class="ico" data-ico="barcode" data-ico-size="24"></span></button>
 </div>
 <div id="fabScrim"></div>
 
@@ -1640,8 +1640,10 @@ $$('nav button').forEach(b => b.onclick = ()=>{ tap(); show(b.dataset.v); });
 function fabClose(){ $('#fab').classList.remove('open'); }
 $('#fabMain').onclick = ()=>{ tap(); $('#fab').classList.add('open'); };
 $('#fabScrim').onclick = fabClose;
-$('#fabBc').onclick  = ()=>{ tap(); show('neu'); startScan(); };
-$('#fabCam').onclick = ()=>{ tap(); show('neu'); $('#fileCam').click(); };
+$('#fabBc').onclick  = ()=>{ tap(); fabClose(); startScan(); };
+$('#fabCam').onclick = ()=>{ tap(); fabClose(); $('#fileCam').click(); };
+// Erst nach der Aufnahme/Erkennung auf "Neu" wechseln, damit die Kamera sofort aufgeht.
+function toNeu(){ if(!$('#v-heute').classList.contains('hidden')) show('neu'); }
 
 /* ============ Neu: Slot + Foto ============ */
 let pickedSlot = defaultSlot();
@@ -2074,7 +2076,7 @@ $('#galleryLink').onclick = e => { e.preventDefault(); $('#fileLib').click(); };
 $('#textOnlyLink').onclick = e => { e.preventDefault(); openFoodPanel(); $('#note').focus(); };
 $('#manualLink').onclick = e => { e.preventDefault(); openManualPanel(); $('#mnName').focus(); };
 $('#btnClear').onclick = clearPhoto;
-$('#fileCam').onchange = e => pickFile(e.target.files[0]);
+$('#fileCam').onchange = e => { const f=e.target.files[0]; if(f) toNeu(); pickFile(f); };
 $('#fileLib').onchange = e => pickFile(e.target.files[0]);
 
 $('#mnAdd').onclick = ()=>{
@@ -2439,6 +2441,7 @@ function scanTick(){
         const code = hits && hits[0] && hits[0].rawValue;
         if(code){
           tap(); stopScan();
+          toNeu();
           $('#bcInput').value = code;
           lookupBarcode(code);
           return;
